@@ -1,0 +1,145 @@
+/* Estilos para el layout de emprendedor */
+
+.emprendedor-layout-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--surface-ground);
+}
+
+.emprendedor-sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background-color: var(--surface-card);
+    border-right: 1px solid var(--surface-border);
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: transform 0.3s ease-in-out;
+}
+
+.emprendedor-content-wrapper {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.emprendedor-topbar {
+    background-color: var(--surface-card);
+    border-bottom: 1px solid var(--surface-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 997;
+    width: 100%;
+}
+
+.emprendedor-main {
+    flex: 1;
+    padding: 2rem;
+    background-color: var(--surface-ground);
+    overflow: auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.emprendedor-main-content {
+    max-width: 100%;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Responsive */
+@media screen and (max-width: 991px) {
+    .emprendedor-sidebar {
+        transform: translateX(-100%);
+    }
+
+    .emprendedor-sidebar.active {
+        transform: translateX(0);
+    }
+
+    .emprendedor-content-wrapper {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .emprendedor-main {
+        padding: 1.5rem 1rem;
+    }
+}
+
+@media screen and (max-width: 575px) {
+    .emprendedor-main {
+        padding: 1rem 0.75rem;
+    }
+}
+
+/* Prevenir scroll horizontal */
+.emprendedor-layout-wrapper,
+.emprendedor-content-wrapper,
+.emprendedor-main,
+.emprendedor-main-content {
+    overflow-x: hidden;
+}
+
+/* Ajustes para las cards dentro del layout */
+.emprendedor-main-content .p-card {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.emprendedor-main-content .p-datatable {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Botón para abrir sidebar en móvil */
+.emprendedor-sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media screen and (max-width: 991px) {
+    .emprendedor-sidebar-toggle {
+        display: flex;
+    }
+}
+
+/* Overlay para cerrar sidebar en móvil */
+.emprendedor-sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 998;
+}
+
+@media screen and (max-width: 991px) {
+    .emprendedor-sidebar-overlay.active {
+        display: block;
+    }
+}
