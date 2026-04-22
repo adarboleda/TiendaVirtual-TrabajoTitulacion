@@ -1,0 +1,191 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-ecommerce-sigchos
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      TZ: America/Guayaquil
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/mysql-init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --max_connections=500
+    networks:
+      - feria-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin", "-padmin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Eureka Server - Service Discovery
+  eureka-server:
+    build:
+      context: ./Microservicios/eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8761
+    ports:
+      - "8761:8761"
+    networks:
+      - feria-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Microservicio de Productos
+  msvc-producto:
+    build:
+      context: ./Microservicios/msvc-producto
+      dockerfile: Dockerfile
+    container_name: msvc-producto
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8081
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/productos?useSSL=false&serverTimezone=America/Guayaquil&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=false
+      - EUREKA_INSTANCE_HOSTNAME=msvc-producto
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - feria-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # Microservicio de Inventario
+  msvc-inventario:
+    build:
+      context: ./Microservicios/msvc-inventario
+      dockerfile: Dockerfile
+    container_name: msvc-inventario
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8082
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/inventario?useSSL=false&serverTimezone=America/Guayaquil&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=false
+      - EUREKA_INSTANCE_HOSTNAME=msvc-inventario
+      - APP_MSVC_PRODUCTO_URL=http://msvc-producto:8081
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      msvc-producto:
+        condition: service_healthy
+    networks:
+      - feria-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # Microservicio de Ventas (con Camunda BPM)
+  msvc-ventas:
+    build:
+      context: ./Microservicios/msvc-ventas
+      dockerfile: Dockerfile
+    container_name: msvc-ventas
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8083
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ventas?useSSL=false&serverTimezone=America/Guayaquil&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - EUREKA_CLIENT_ENABLED=false
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+      - APP_MSVC_PRODUCTO_URL=http://msvc-producto:8081
+      - APP_MSVC_INVENTARIO_URL=http://msvc-inventario:8082
+      - STRIPE_API_KEY=${STRIPE_API_KEY:-sk_test_default}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_default}
+      - FACTURA_DIRECTORIO=/app/facturas
+      - CAMUNDA_BPM_ADMIN_USER_ID=admin
+      - CAMUNDA_BPM_ADMIN_USER_PASSWORD=admin
+    ports:
+      - "8083:8083"
+    volumes:
+      - facturas_data:/app/facturas
+    depends_on:
+      mysql:
+        condition: service_healthy
+      msvc-producto:
+        condition: service_healthy
+      msvc-inventario:
+        condition: service_healthy
+    networks:
+      - feria-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # Frontend React + Next.js
+  frontend:
+    build:
+      context: ./avalon-react-10.1.0
+      dockerfile: Dockerfile
+    container_name: frontend-ecommerce
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8083
+    ports:
+      - "3000:80"
+    depends_on:
+      msvc-ventas:
+        condition: service_healthy
+    networks:
+      - feria-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  mysql_data:
+    driver: local
+  facturas_data:
+    driver: local
+
+networks:
+  feria-network:
+    driver: bridge

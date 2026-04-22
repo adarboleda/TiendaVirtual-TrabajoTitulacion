@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  id="Definitions_1"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+
+  <bpmn:process id="proceso-venta-completa" name="Proceso de Venta Completa" isExecutable="true" camunda:historyTimeToLive="30">
+    
+    <!-- Evento de Inicio -->
+    <bpmn:startEvent id="StartEvent_1" name="Iniciar Venta">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Tarea 1: Validar Productos -->
+    <bpmn:serviceTask id="Task_ValidarProductos" 
+                      name="Validar Productos" 
+                      camunda:delegateExpression="${validarProductosDelegate}">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Gateway Exclusivo: ¿Productos Válidos? -->
+    <bpmn:exclusiveGateway id="Gateway_ProductosValidos" name="¿Productos Válidos?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_ProductosOk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ProductosError</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Tarea 2: Verificar Inventario -->
+    <bpmn:serviceTask id="Task_VerificarInventario" 
+                      name="Verificar Stock" 
+                      camunda:delegateExpression="${verificarInventarioDelegate}">
+      <bpmn:incoming>Flow_ProductosOk</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Gateway Exclusivo: ¿Stock Disponible? -->
+    <bpmn:exclusiveGateway id="Gateway_StockDisponible" name="¿Stock Disponible?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_StockOk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_StockInsuficiente</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Tarea 3: Crear Venta -->
+    <bpmn:serviceTask id="Task_CrearVenta" 
+                      name="Crear Venta" 
+                      camunda:delegateExpression="${crearVentaDelegate}">
+      <bpmn:incoming>Flow_StockOk</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Tarea 4: Procesar Pago -->
+    <bpmn:serviceTask id="Task_ProcesarPago" 
+                      name="Procesar Pago" 
+                      camunda:delegateExpression="${procesarPagoDelegate}">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Gateway Exclusivo: ¿Pago Exitoso? -->
+    <bpmn:exclusiveGateway id="Gateway_PagoExitoso" name="¿Pago Exitoso?">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_PagoOk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_PagoError</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Tarea 5: Actualizar Inventario -->
+    <bpmn:serviceTask id="Task_ActualizarInventario" 
+                      name="Descontar Stock" 
+                      camunda:delegateExpression="${actualizarInventarioDelegate}">
+      <bpmn:incoming>Flow_PagoOk</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Tarea 6: Generar Factura -->
+    <bpmn:serviceTask id="Task_GenerarFactura" 
+                      name="Generar Factura PDF" 
+                      camunda:delegateExpression="${generarFacturaDelegate}">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Tarea 7: Enviar Notificación -->
+    <bpmn:serviceTask id="Task_EnviarNotificacion" 
+                      name="Notificar Cliente" 
+                      camunda:delegateExpression="${enviarNotificacionDelegate}">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Evento de Fin: Venta Exitosa -->
+    <bpmn:endEvent id="EndEvent_Exitoso" name="Venta Completada">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Tarea: Cancelar Venta (Productos Inválidos) -->
+    <bpmn:serviceTask id="Task_CancelarVentaProductos" 
+                      name="Rechazar: Productos Inválidos" 
+                      camunda:delegateExpression="${cancelarVentaDelegate}">
+      <bpmn:incoming>Flow_ProductosError</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEndError1</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Tarea: Cancelar Venta (Stock Insuficiente) -->
+    <bpmn:serviceTask id="Task_CancelarVentaStock" 
+                      name="Rechazar: Stock Insuficiente" 
+                      camunda:delegateExpression="${cancelarVentaDelegate}">
+      <bpmn:incoming>Flow_StockInsuficiente</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEndError2</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Tarea: Revertir Venta (Pago Fallido) -->
+    <bpmn:serviceTask id="Task_RevertirVenta" 
+                      name="Revertir: Pago Fallido" 
+                      camunda:delegateExpression="${revertirVentaDelegate}">
+      <bpmn:incoming>Flow_PagoError</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEndError3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Eventos de Fin: Errores -->
+    <bpmn:endEvent id="EndEvent_ErrorProductos" name="Error: Productos Inválidos">
+      <bpmn:incoming>Flow_ToEndError1</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_ProductosInvalidos"/>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="EndEvent_ErrorStock" name="Error: Sin Stock">
+      <bpmn:incoming>Flow_ToEndError2</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_StockInsuficiente"/>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="EndEvent_ErrorPago" name="Error: Pago Fallido">
+      <bpmn:incoming>Flow_ToEndError3</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_PagoFallido"/>
+    </bpmn:endEvent>
+
+    <!-- Flujos de Secuencia -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_ValidarProductos"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_ValidarProductos" targetRef="Gateway_ProductosValidos"/>
+    
+    <bpmn:sequenceFlow id="Flow_ProductosOk" name="Sí" sourceRef="Gateway_ProductosValidos" targetRef="Task_VerificarInventario">
+      <bpmn:conditionExpression>${productosValidos == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ProductosError" name="No" sourceRef="Gateway_ProductosValidos" targetRef="Task_CancelarVentaProductos">
+      <bpmn:conditionExpression>${productosValidos == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_VerificarInventario" targetRef="Gateway_StockDisponible"/>
+    
+    <bpmn:sequenceFlow id="Flow_StockOk" name="Sí" sourceRef="Gateway_StockDisponible" targetRef="Task_CrearVenta">
+      <bpmn:conditionExpression>${stockDisponible == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_StockInsuficiente" name="No" sourceRef="Gateway_StockDisponible" targetRef="Task_CancelarVentaStock">
+      <bpmn:conditionExpression>${stockDisponible == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_CrearVenta" targetRef="Task_ProcesarPago"/>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_ProcesarPago" targetRef="Gateway_PagoExitoso"/>
+    
+    <bpmn:sequenceFlow id="Flow_PagoOk" name="Sí" sourceRef="Gateway_PagoExitoso" targetRef="Task_ActualizarInventario">
+      <bpmn:conditionExpression>${pagoExitoso == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_PagoError" name="No" sourceRef="Gateway_PagoExitoso" targetRef="Task_RevertirVenta">
+      <bpmn:conditionExpression>${pagoExitoso == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_ActualizarInventario" targetRef="Task_GenerarFactura"/>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_GenerarFactura" targetRef="Task_EnviarNotificacion"/>
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Task_EnviarNotificacion" targetRef="EndEvent_Exitoso"/>
+
+    <bpmn:sequenceFlow id="Flow_ToEndError1" sourceRef="Task_CancelarVentaProductos" targetRef="EndEvent_ErrorProductos"/>
+    <bpmn:sequenceFlow id="Flow_ToEndError2" sourceRef="Task_CancelarVentaStock" targetRef="EndEvent_ErrorStock"/>
+    <bpmn:sequenceFlow id="Flow_ToEndError3" sourceRef="Task_RevertirVenta" targetRef="EndEvent_ErrorPago"/>
+
+  </bpmn:process>
+
+  <!-- Definiciones de Errores -->
+  <bpmn:error id="Error_ProductosInvalidos" name="ProductosInvalidos" errorCode="PRODUCTOS_INVALIDOS"/>
+  <bpmn:error id="Error_StockInsuficiente" name="StockInsuficiente" errorCode="STOCK_INSUFICIENTE"/>
+  <bpmn:error id="Error_PagoFallido" name="PagoFallido" errorCode="PAGO_FALLIDO"/>
+
+  <!-- Diagrama BPMN -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="proceso-venta-completa">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ValidarProductos_di" bpmnElement="Task_ValidarProductos">
+        <dc:Bounds x="240" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ProductosValidos_di" bpmnElement="Gateway_ProductosValidos" isMarkerVisible="true">
+        <dc:Bounds x="395" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_VerificarInventario_di" bpmnElement="Task_VerificarInventario">
+        <dc:Bounds x="500" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_StockDisponible_di" bpmnElement="Gateway_StockDisponible" isMarkerVisible="true">
+        <dc:Bounds x="655" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CrearVenta_di" bpmnElement="Task_CrearVenta">
+        <dc:Bounds x="760" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ProcesarPago_di" bpmnElement="Task_ProcesarPago">
+        <dc:Bounds x="920" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_PagoExitoso_di" bpmnElement="Gateway_PagoExitoso" isMarkerVisible="true">
+        <dc:Bounds x="1075" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ActualizarInventario_di" bpmnElement="Task_ActualizarInventario">
+        <dc:Bounds x="1180" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GenerarFactura_di" bpmnElement="Task_GenerarFactura">
+        <dc:Bounds x="1340" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnviarNotificacion_di" bpmnElement="Task_EnviarNotificacion">
+        <dc:Bounds x="1500" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Exitoso_di" bpmnElement="EndEvent_Exitoso">
+        <dc:Bounds x="1662" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CancelarVentaProductos_di" bpmnElement="Task_CancelarVentaProductos">
+        <dc:Bounds x="370" y="200" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CancelarVentaStock_di" bpmnElement="Task_CancelarVentaStock">
+        <dc:Bounds x="630" y="200" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RevertirVenta_di" bpmnElement="Task_RevertirVenta">
+        <dc:Bounds x="1050" y="200" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ErrorProductos_di" bpmnElement="EndEvent_ErrorProductos">
+        <dc:Bounds x="402" y="322" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ErrorStock_di" bpmnElement="EndEvent_ErrorStock">
+        <dc:Bounds x="662" y="322" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ErrorPago_di" bpmnElement="EndEvent_ErrorPago">
+        <dc:Bounds x="1082" y="322" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="188" y="120"/>
+        <di:waypoint x="240" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="340" y="120"/>
+        <di:waypoint x="395" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ProductosOk_di" bpmnElement="Flow_ProductosOk">
+        <di:waypoint x="445" y="120"/>
+        <di:waypoint x="500" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ProductosError_di" bpmnElement="Flow_ProductosError">
+        <di:waypoint x="420" y="145"/>
+        <di:waypoint x="420" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="600" y="120"/>
+        <di:waypoint x="655" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StockOk_di" bpmnElement="Flow_StockOk">
+        <di:waypoint x="705" y="120"/>
+        <di:waypoint x="760" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StockInsuficiente_di" bpmnElement="Flow_StockInsuficiente">
+        <di:waypoint x="680" y="145"/>
+        <di:waypoint x="680" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="860" y="120"/>
+        <di:waypoint x="920" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="1020" y="120"/>
+        <di:waypoint x="1075" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PagoOk_di" bpmnElement="Flow_PagoOk">
+        <di:waypoint x="1125" y="120"/>
+        <di:waypoint x="1180" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PagoError_di" bpmnElement="Flow_PagoError">
+        <di:waypoint x="1100" y="145"/>
+        <di:waypoint x="1100" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1280" y="120"/>
+        <di:waypoint x="1340" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1440" y="120"/>
+        <di:waypoint x="1500" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="1600" y="120"/>
+        <di:waypoint x="1662" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEndError1_di" bpmnElement="Flow_ToEndError1">
+        <di:waypoint x="420" y="280"/>
+        <di:waypoint x="420" y="322"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEndError2_di" bpmnElement="Flow_ToEndError2">
+        <di:waypoint x="680" y="280"/>
+        <di:waypoint x="680" y="322"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEndError3_di" bpmnElement="Flow_ToEndError3">
+        <di:waypoint x="1100" y="280"/>
+        <di:waypoint x="1100" y="322"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

@@ -1,0 +1,202 @@
+version: '3.8'
+
+# CONFIGURACIÓN OPTIMIZADA PARA SERVIDORES CON RECURSOS LIMITADOS
+# Uso estimado: ~2.5GB RAM (con límites estrictos)
+# SIN Eureka Server (ahorra ~500MB)
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-ecommerce-siachos
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-admin}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-admin}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - feria-network
+    command: 
+      - --max_connections=100
+      - --innodb_buffer_pool_size=256M
+      - --key_buffer_size=32M
+      - --query_cache_size=0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  msvc-producto:
+    build:
+      context: ./Microservicios/msvc-producto
+      dockerfile: Dockerfile
+    container_name: msvc-producto
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/productos?createDatabaseIfNotExist=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-admin}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-admin}
+      EUREKA_CLIENT_ENABLED: false
+      SERVER_PORT: 8081
+      JAVA_OPTS: "-Xms256m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - feria-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 400M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  msvc-inventario:
+    build:
+      context: ./Microservicios/msvc-inventario
+      dockerfile: Dockerfile
+    container_name: msvc-inventario
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/inventario?createDatabaseIfNotExist=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-admin}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-admin}
+      EUREKA_CLIENT_ENABLED: false
+      APP_MSVC_PRODUCTO_URL: http://msvc-producto:8081
+      SERVER_PORT: 8082
+      JAVA_OPTS: "-Xms256m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      msvc-producto:
+        condition: service_healthy
+    networks:
+      - feria-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 400M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  msvc-ventas:
+    build:
+      context: ./Microservicios/msvc-ventas
+      dockerfile: Dockerfile
+    container_name: msvc-ventas
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ventas?createDatabaseIfNotExist=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-admin}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-admin}
+      EUREKA_CLIENT_ENABLED: false
+      APP_MSVC_PRODUCTO_URL: http://msvc-producto:8081
+      APP_MSVC_INVENTARIO_URL: http://msvc-inventario:8082
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      CAMUNDA_BPM_ADMIN_USER_ID: admin
+      CAMUNDA_BPM_ADMIN_USER_PASSWORD: admin
+      SERVER_PORT: 8083
+      JAVA_OPTS: "-Xms384m -Xmx768m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication"
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      msvc-producto:
+        condition: service_healthy
+      msvc-inventario:
+        condition: service_healthy
+    volumes:
+      - facturas_data:/app/facturas
+    networks:
+      - feria-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 800M
+        reservations:
+          cpus: '0.4'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  frontend:
+    build:
+      context: ./avalon-react-10.1.0
+      dockerfile: Dockerfile
+    container_name: frontend-ecommerce
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://msvc-ventas:8083
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      msvc-ventas:
+        condition: service_healthy
+    networks:
+      - feria-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  feria-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  facturas_data:

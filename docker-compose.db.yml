@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-feria-digital
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-admin}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-admin}
+      TZ: America/Guayaquil
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db-01-create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
+      - ./db-02-schema-auth-service.sql:/docker-entrypoint-initdb.d/02-schema-auth-service.sql:ro
+      - ./db-03-schema-productos.sql:/docker-entrypoint-initdb.d/03-schema-productos.sql:ro
+      - ./db-04-schema-inventario.sql:/docker-entrypoint-initdb.d/04-schema-inventario.sql:ro
+      - ./db-05-schema-ventas.sql:/docker-entrypoint-initdb.d/05-schema-ventas.sql:ro
+      - ./db-06-seed-auth-service.sql:/docker-entrypoint-initdb.d/06-seed-auth-service.sql:ro
+      - ./db-07-seed-productos.sql:/docker-entrypoint-initdb.d/07-seed-productos.sql:ro
+      - ./db-08-seed-inventario.sql:/docker-entrypoint-initdb.d/08-seed-inventario.sql:ro
+      - ./db-09-seed-ventas.sql:/docker-entrypoint-initdb.d/09-seed-ventas.sql:ro
+    command: --default-authentication-plugin=mysql_native_password --max_connections=500
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u',
+          'root',
+          '-p${MYSQL_ROOT_PASSWORD:-admin}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mysql_data:
+    driver: local
