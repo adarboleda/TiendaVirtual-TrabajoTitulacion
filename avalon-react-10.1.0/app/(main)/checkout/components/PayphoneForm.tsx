@@ -14,8 +14,8 @@ declare global {
 interface PayphoneFormProps {
     onDataChange: (data: any, isValid: boolean) => void;
     primaryColor: string;
-    totalAmount: number; // Monto total en dólares
-    clienteData: any; // Datos del cliente
+    totalAmount: number;
+    clienteData: any;
 }
 
 const PayphoneForm: React.FC<PayphoneFormProps> = ({
@@ -26,100 +26,120 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
 }) => {
     const [scriptLoaded, setScriptLoaded] = useState(false);
     const [buttonRendered, setButtonRendered] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
     const buttonContainerRef = useRef<HTMLDivElement>(null);
+    const renderAttempted = useRef(false);
 
-    // Leer valores directamente desde las variables de entorno configuradas
     const PAYPHONE_APP_ID = process.env.NEXT_PUBLIC_PAYPHONE_APP_ID || '';
     const PAYPHONE_TOKEN = process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || '';
 
+    // Notificar al checkout que el método payphone está activo
     useEffect(() => {
-        // Marcamos el formulario como "inválido" para el botón "Pagar" principal de Next.js
-        // para que el usuario deba hacer clic obligatoriamente en el botón de Payphone.
         onDataChange({ ready: true, method: 'payphone' }, false);
-
-        // Función para cargar el SDK de Payphone
-        const loadPayphoneScript = () => {
-            // Si ya existe el script, no lo cargamos dos veces
-            if (document.getElementById('payphone-script')) {
-                setScriptLoaded(true);
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.id = 'payphone-script';
-            script.src = `https://pay.payphonetodoesposible.com/api/button/js?appId=${PAYPHONE_APP_ID}`;
-            script.type = 'module';
-            script.async = true;
-            
-            script.onload = () => {
-                console.log('Script de Payphone cargado exitosamente');
-                setScriptLoaded(true);
-            };
-
-            script.onerror = () => {
-                console.error('Error al cargar el script de Payphone');
-            };
-
-            document.body.appendChild(script);
-        };
-
-        loadPayphoneScript();
-        
-        return () => {
-            // Opcional: Limpieza al desmontar el componente si se requiere
-        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // IMPORTANTE: array vacío para evitar bucles infinitos por el cambio de onDataChange
+    }, []);
 
+    // Cargar el script del SDK de Payphone
     useEffect(() => {
-        // Si el script ya cargó, el objeto window.payphone existe y no hemos renderizado el botón
-        if (scriptLoaded && window.payphone && !buttonRendered && buttonContainerRef.current) {
-            try {
-                // Generar un ID único para la transacción
-                const uniqueTxId = `ORD-${Date.now()}`;
-                
-                // Monto en centavos (ej: $10.00 -> 1000)
-                const amountInCents = Math.round(totalAmount * 100);
-
-                window.payphone.Button({
-                    token: PAYPHONE_TOKEN,
-                    btnHorizontal: true,
-                    btnCard: true,
-                    responseUrl: window.location.origin + "/checkout/payphone-confirmacion",
-                    createOrder: function(txn: any) {
-                        return txn.prepare({
-                            amount: amountInCents,
-                            amountWithoutTax: amountInCents,
-                            amountWithTax: 0,
-                            tax: 0,
-                            service: 0,
-                            tip: 0,
-                            currency: "USD",
-                            clientTransactionId: uniqueTxId,
-                            lang: "es",
-                            email: clienteData?.email || "correo@ejemplo.com",
-                            documentId: clienteData?.documento || "0999999999",
-                            phoneNumber: clienteData?.telefono || "0999999999",
-                            responseUrl: window.location.origin + "/checkout/payphone-confirmacion",
-                            storeId: PAYPHONE_APP_ID // En algunas versiones, pasar el appId como storeId también evita errores.
-                        });
-                    },
-                    onComplete: function(model: any, btn: any) {
-                        // Aunque Payphone V2 redirige automáticamente, 
-                        // ponemos este callback de respaldo en caso de que la configuración lo requiera.
-                        console.log("Pago completado, modelo retornado:", model);
-                        if(model && model.id && model.clientTxId) {
-                            window.location.href = `/checkout/payphone-confirmacion?id=${model.id}&clientTransactionId=${model.clientTxId}`;
-                        }
-                    }
-                }).render("#pp-button");
-
-                setButtonRendered(true);
-            } catch (error) {
-                console.error('Error al renderizar el botón de Payphone:', error);
-            }
+        if (!PAYPHONE_APP_ID) {
+            setErrorMsg('NEXT_PUBLIC_PAYPHONE_APP_ID no está configurado en .env.local');
+            return;
         }
-    }, [scriptLoaded, buttonRendered, totalAmount, PAYPHONE_TOKEN]);
+
+        const existingScript = document.getElementById('payphone-script');
+        if (existingScript) {
+            if (window.payphone) {
+                setScriptLoaded(true);
+            } else {
+                const timer = setTimeout(() => setScriptLoaded(true), 500);
+                return () => clearTimeout(timer);
+            }
+            return;
+        }
+
+        // ⚠️ CRÍTICO: NO usar type="module". Los scripts tipo "module" tienen
+        // scope propio y NO exponen window.payphone globalmente.
+        const script = document.createElement('script');
+        script.id = 'payphone-script';
+        script.src = `https://pay.payphonetodoesposible.com/api/button/js?appId=${PAYPHONE_APP_ID}`;
+        // NO se pone script.type = 'module' — eso rompe el scope global
+
+        script.onload = () => {
+            // Dar margen para que el SDK inicialice window.payphone
+            setTimeout(() => {
+                console.log('[Payphone] Script cargado. window.payphone disponible:', !!window.payphone);
+                setScriptLoaded(true);
+            }, 300);
+        };
+
+        script.onerror = () => {
+            setErrorMsg('No se pudo cargar el SDK de Payphone. Verifica tu conexión o el App ID.');
+        };
+
+        document.body.appendChild(script);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [PAYPHONE_APP_ID]);
+
+    // Renderizar el botón cuando el script esté listo
+    useEffect(() => {
+        if (!scriptLoaded || buttonRendered || renderAttempted.current) return;
+        if (!buttonContainerRef.current) return;
+
+        if (!window.payphone) {
+            setErrorMsg('El SDK de Payphone cargó pero no inicializó. Recarga la página.');
+            return;
+        }
+
+        if (!PAYPHONE_TOKEN) {
+            setErrorMsg('NEXT_PUBLIC_PAYPHONE_TOKEN no está configurado en .env.local');
+            return;
+        }
+
+        renderAttempted.current = true;
+
+        try {
+            const uniqueTxId = `ORD-${Date.now()}`;
+            const amountInCents = Math.round(totalAmount * 100);
+            const responseUrl = `${window.location.origin}/checkout/payphone-confirmacion`;
+
+            console.log('[Payphone] Inicializando botón:', { amount: amountInCents, responseUrl });
+
+            window.payphone.Button({
+                token: PAYPHONE_TOKEN,
+                btnHorizontal: true,
+                btnCard: true,
+                createOrder: function(actions: any) {
+                    return actions.prepare({
+                        amount: amountInCents,
+                        amountWithoutTax: amountInCents,
+                        amountWithTax: 0,
+                        tax: 0,
+                        service: 0,
+                        tip: 0,
+                        currency: 'USD',
+                        clientTransactionId: uniqueTxId,
+                        lang: 'es',
+                        responseUrl: responseUrl,
+                    });
+                },
+                onComplete: function(model: any) {
+                    if (model && model.id && model.clientTxId) {
+                        window.location.href = `/checkout/payphone-confirmacion?id=${model.id}&clientTransactionId=${model.clientTxId}`;
+                    }
+                },
+                onError: function(err: any) {
+                    console.error('[Payphone] Error en el pago:', err);
+                }
+            }).render('#pp-button');
+
+            setButtonRendered(true);
+        } catch (error: any) {
+            console.error('[Payphone] Error al renderizar el botón:', error);
+            setErrorMsg(`Error al inicializar Payphone: ${error?.message || error}`);
+            renderAttempted.current = false;
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scriptLoaded, buttonRendered]);
 
     return (
         <Card className="mb-4">
@@ -127,21 +147,32 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
                 <i className="pi pi-mobile text-6xl mb-3" style={{ color: '#f97316' }}></i>
                 <h3 className="text-xl font-semibold mb-2">Pago con Payphone</h3>
                 <p className="text-600 mb-4">
-                    Haz clic en el botón inferior para abrir la pasarela segura y realizar tu pago.
+                    Selecciona tu forma de pago para continuar con la compra de forma segura.
                 </p>
 
-                {/* AQUÍ ES DONDE SE RENDERIZA EL BOTÓN DE PAYPHONE */}
-                <div className="flex justify-content-center w-full min-h-4rem mb-3">
-                    {!scriptLoaded && (
-                        <div className="flex align-items-center flex-column">
-                            <ProgressSpinner style={{width: '30px', height: '30px'}} strokeWidth="4" />
-                            <small className="mt-2 text-600">Cargando pasarela segura...</small>
-                        </div>
-                    )}
-                    
-                    {/* Contenedor oficial requerido por el SDK */}
-                    <div id="pp-button" ref={buttonContainerRef} className="w-full max-w-sm"></div>
-                </div>
+                {/* Estado: Cargando */}
+                {!scriptLoaded && !errorMsg && (
+                    <div className="flex align-items-center justify-content-center flex-column py-3">
+                        <ProgressSpinner style={{ width: '35px', height: '35px' }} strokeWidth="4" />
+                        <small className="mt-2 text-600">Cargando pasarela segura de Payphone...</small>
+                    </div>
+                )}
+
+                {/* Estado: Error */}
+                {errorMsg && (
+                    <div className="p-3 border-round text-sm" style={{ background: '#fff3f3', border: '1px solid #f5c6cb', color: '#721c24' }}>
+                        <i className="pi pi-exclamation-triangle mr-2"></i>
+                        {errorMsg}
+                    </div>
+                )}
+
+                {/* Contenedor oficial del SDK — siempre en el DOM */}
+                <div
+                    id="pp-button"
+                    ref={buttonContainerRef}
+                    className="flex justify-content-center w-full mt-2"
+                    style={{ minHeight: scriptLoaded && !errorMsg ? '60px' : '0px' }}
+                ></div>
 
                 <div className="mt-4 text-sm text-500">
                     <i className="pi pi-lock mr-1"></i>
