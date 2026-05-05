@@ -19,6 +19,7 @@ import PaymentMethodSelector from './components/PaymentMethodSelector';
 import TransferenciaBancariaForm from './components/TransferenciaBancariaForm';
 import DeunaForm from './components/DeunaForm';
 import StripeCheckoutForm from './components/StripeCheckoutForm';
+import PayphoneForm from './components/PayphoneForm';
 import { crearPaymentIntent, confirmarPago } from '../../../services/stripeService';
 
 const CheckoutPage: React.FC = () => {
@@ -605,6 +606,18 @@ const CheckoutPage: React.FC = () => {
                         setPaymentFormValid(isValid);
                     }}
                     primaryColor={primaryColor}
+                />
+            )}
+
+            {!paymentProcessing && selectedPaymentMethod === 'payphone' && (
+                <PayphoneForm
+                    onDataChange={(data, isValid) => {
+                        setPaymentFormData(data);
+                        setPaymentFormValid(isValid); // Estará en false para evitar el botón "Continuar al pago" por defecto
+                    }}
+                    primaryColor={primaryColor}
+                    totalAmount={cartSummary?.total || 0}
+                    clienteData={clienteData}
                 />
             )}
 

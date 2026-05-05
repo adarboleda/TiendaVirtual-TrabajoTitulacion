@@ -5,7 +5,7 @@ import { Card } from 'primereact/card';
 import { RadioButton } from 'primereact/radiobutton';
 import { Divider } from 'primereact/divider';
 
-export type PaymentMethod = 'transferencia' | 'tarjeta' | 'deuna';
+export type PaymentMethod = 'transferencia' | 'tarjeta' | 'deuna' | 'payphone';
 
 export interface PaymentMethodData {
     method: PaymentMethod;
@@ -50,8 +50,15 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             color: '#22c55e'
         },
         {
+            value: 'payphone' as PaymentMethod,
+            label: 'Payphone',
+            icon: 'pi-mobile',
+            description: 'Paga con Payphone o tarjeta de crédito',
+            color: '#f97316'
+        },
+        {
             value: 'tarjeta' as PaymentMethod,
-            label: 'Tarjeta de Crédito/Débito',
+            label: 'Tarjeta de Crédito/Débito (Stripe)',
             icon: 'pi-credit-card',
             description: 'Paga de forma segura con tu tarjeta',
             color: '#3b82f6'
