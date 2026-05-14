@@ -45,6 +45,14 @@ public class VentaServiceImpl implements VentaService {
         venta.setFechaCreacion(ahora);
         venta.setFechaActualizacion(ahora);
         venta.setEstado(Venta.EstadoVenta.PENDIENTE);
+        
+        if (venta.getEstadoPago() == null) {
+            venta.setEstadoPago(Venta.EstadoPago.PENDIENTE);
+        }
+        
+        if (venta.getMetodoPago() == null) {
+            venta.setMetodoPago(Venta.MetodoPago.TRANSFERENCIA);
+        }
 
         // Guardar la venta para obtener el ID
         Venta ventaGuardada = ventaRepository.save(venta);

@@ -322,9 +322,13 @@ class CartService {
             const clienteId = clienteResult.data.id;
             console.log('✅ Cliente procesado con ID:', clienteId);
 
-            // Preparar datos para la venta (incluyendo nombre y precio para evitar llamadas HTTP en backend)
+            // Obtener el ID del emprendedor del primer producto del carrito
+            const emprendedorId = cart[0].producto.empresa?.id || 1;
+
+            // Preparar datos para la venta
             const checkoutData = {
                 clienteId: clienteId,
+                emprendedorId: emprendedorId,
                 items: cart.map(item => ({
                     productoId: item.producto.id,
                     cantidad: item.cantidad,

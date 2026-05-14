@@ -45,9 +45,14 @@ public class VentaApplicationService {
 
     @Transactional
     public VentaResponseDto crearVenta(VentaRequestDto requestDto) {
-        log.info("Iniciando creación de venta para cliente ID: {}", requestDto.getClienteId());
+        log.info("🛒 Iniciando proceso de creación de venta en msvc-ventas...");
+        log.info("👤 Cliente ID: {}", requestDto.getClienteId());
+        log.info("🏢 Emprendedor ID recibido: {}", requestDto.getEmprendedorId());
+        log.info("💳 Método de Pago: {}", requestDto.getMetodoPago());
+        log.info("📦 Cantidad de items: {}", requestDto.getItems() != null ? requestDto.getItems().size() : 0);
 
         // 1. Obtener el cliente existente de la base de datos usando ClienteRepository
+        log.info("🔍 Validando existencia del cliente...");
         Cliente cliente = clienteRepository.findById(requestDto.getClienteId())
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + requestDto.getClienteId()));
         log.info("Cliente encontrado: {} - {}", cliente.getNombre(), cliente.getEmail());
@@ -68,6 +73,8 @@ public class VentaApplicationService {
         log.info("Venta mapeada, procediendo a guardar");
 
         Venta ventaCreada = ventaService.crearVenta(venta);
+        log.info("✅ Venta guardada exitosamente en la base de datos con ID: {} y Factura: {}", 
+                ventaCreada.getId(), ventaCreada.getNumeroFactura());
         log.info("Venta creada con ID: {}", ventaCreada.getId());
 
         // 5. Crear el pago de forma asíncrona (en segundo plano)

@@ -29,4 +29,6 @@ public class VentaRequestDto {
     private String metodoPago; // TRANSFERENCIA, TARJETA, DEUNA
 
     private String comprobanteUrl; // Opcional, requerido solo para TRANSFERENCIA
+
+    private Long emprendedorId; // ID del emprendedor/empresa que realiza la venta
 }

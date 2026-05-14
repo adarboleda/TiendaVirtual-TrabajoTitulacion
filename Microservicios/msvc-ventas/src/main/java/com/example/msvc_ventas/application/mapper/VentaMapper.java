@@ -21,9 +21,8 @@ public class VentaMapper {
     }
 
     public Venta toEntity(VentaRequestDto dto, Cliente cliente, List<ProductoDto> productos) {
-        // Por ahora usamos un emprendedorId por defecto (1)
-        // TODO: Obtener el emprendedorId correcto del producto
-        Long emprendedorId = 1L;
+        // Obtener el emprendedorId del DTO, con fallback a 1L por compatibilidad
+        Long emprendedorId = dto.getEmprendedorId() != null ? dto.getEmprendedorId() : 1L;
 
         // Crear los detalles de venta basados en los items y productos
         List<DetalleVenta> detalles = dto.getItems().stream()
@@ -62,6 +61,15 @@ public class VentaMapper {
         String numeroFactura = "FACT-" + System.currentTimeMillis();
 
         // Crear la venta
+        Venta.MetodoPago metodoPago = Venta.MetodoPago.TRANSFERENCIA;
+        try {
+            if (dto.getMetodoPago() != null) {
+                metodoPago = Venta.MetodoPago.valueOf(dto.getMetodoPago().toUpperCase());
+            }
+        } catch (IllegalArgumentException e) {
+            // Fallback a transferencia si el método no es reconocido
+        }
+
         return Venta.builder()
                 .numeroFactura(numeroFactura)
                 .cliente(cliente)
@@ -70,6 +78,9 @@ public class VentaMapper {
                 .impuesto(impuesto)
                 .total(total)
                 .estado(Venta.EstadoVenta.PENDIENTE)
+                .metodoPago(metodoPago)
+                .estadoPago(Venta.EstadoPago.PENDIENTE) // Estado inicial por defecto
+                .comprobantePagoUrl(dto.getComprobanteUrl())
                 .fechaVenta(LocalDateTime.now())
                 .detalles(detalles)
                 .build();

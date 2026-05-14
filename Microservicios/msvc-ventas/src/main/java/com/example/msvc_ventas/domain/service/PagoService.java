@@ -58,9 +58,10 @@ public class PagoService {
         PagoEntity pagoGuardado = pagoRepository.save(pago);
         log.info("Pago creado con ID: {} en estado {}", pagoGuardado.getId(), estadoInicial);
         
-        // Si es pago con tarjeta, actualizar venta a COMPLETADA automáticamente
+        // Si es pago con tarjeta, actualizar venta a COMPLETADA y APROBADO automáticamente
         if (metodoPago == PagoEntity.MetodoPago.TARJETA) {
             venta.setEstado(VentaEntity.EstadoVenta.COMPLETADA);
+            venta.setEstadoPago(VentaEntity.EstadoPago.APROBADO);
             venta.setFechaActualizacion(LocalDateTime.now());
             ventaJpaRepository.save(venta);
             
@@ -107,6 +108,7 @@ public class PagoService {
         // Actualizar estado de la venta
         VentaEntity venta = pago.getVenta();
         venta.setEstado(VentaEntity.EstadoVenta.COMPLETADA);
+        venta.setEstadoPago(VentaEntity.EstadoPago.APROBADO);
         venta.setFechaActualizacion(LocalDateTime.now());
         ventaJpaRepository.save(venta);
         

@@ -46,24 +46,34 @@ function PayphoneConfirmationContent() {
                     
                     // 🚨 AQUI CREAMOS LA VENTA EN EL BACKEND PARA PAYPHONE 🚨
                     try {
-                        console.log('📝 Creando venta en el backend para Payphone...');
+                        console.log('📝 Iniciando creación de venta post-pago Payphone...');
+                        console.log('💳 ID Transacción:', result.transactionId);
+                        
                         // Como es Payphone, pasamos método como TARJETA y el transactionId como comprobante
                         const checkoutRes = await cartService.processCheckout(undefined, 'TARJETA', result.transactionId);
                         
                         if (checkoutRes.success && checkoutRes.data?.ventaId) {
-                            console.log('✅ Venta creada, confirmando pago en el backend...');
-                            // Completar venta explícitamente si es necesario
-                            await cartService.completarVenta(checkoutRes.data.orderId);
+                            console.log('✅ Venta creada exitosamente. ID Venta:', checkoutRes.data.ventaId);
+                            
+                            // Intentar completar la venta para actualizar stock y estado
+                            try {
+                                console.log('🔄 Completando estado de venta para:', checkoutRes.data.orderId);
+                                await cartService.completarVenta(checkoutRes.data.orderId);
+                                console.log('✅ Proceso de venta finalizado correctamente');
+                            } catch (errorComp) {
+                                console.warn('⚠️ Nota: La venta se creó pero el paso de "completar" falló o ya estaba completada:', errorComp);
+                            }
                         } else {
-                            console.warn('⚠️ La venta no devolvió ID, revisa el historial.', checkoutRes);
+                            console.error('❌ La creación de la venta falló en el backend:', checkoutRes.message);
+                            throw new Error(checkoutRes.message || 'Error desconocido al crear la venta');
                         }
                     } catch (e: any) {
-                        console.error('❌ Error creando la venta en el backend después del pago Payphone:', e);
+                        console.error('❌ ERROR CRÍTICO creando la venta en el backend:', e);
                         toast.current?.show({
-                            severity: 'warn',
-                            summary: 'Atención',
-                            detail: 'El pago fue exitoso pero hubo un problema guardando la orden. Guarda tu ID de transacción.',
-                            life: 10000
+                            severity: 'error',
+                            summary: 'Error de Sincronización',
+                            detail: 'Tu pago fue exitoso pero no pudimos registrar tu orden automáticamente. Por favor captura tu ID de transacción y contacta a soporte.',
+                            life: 15000
                         });
                     }
 

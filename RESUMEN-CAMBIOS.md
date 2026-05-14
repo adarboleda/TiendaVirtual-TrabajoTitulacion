@@ -663,3 +663,47 @@ Para asegurar que los cambios sean persistentes si se borran los volúmenes de D
 
 1. **Backend:** Es necesario reiniciar el microservicio **`msvc-producto`** (Puerto 8081) para que los cambios en el DTO y el Repositorio surtan efecto.
 2. **Frontend:** No es necesario reiniciar, pero se recomienda limpiar el carrito y recargar la página de productos para asegurar que los nuevos datos se carguen en el estado local.
+
+## SESIÓN 7 — Persistencia de Órdenes y Asociación con Emprendedor
+
+### Cambio 25 — Backend: Asociación Dinámica de Venta con Emprendedor
+
+**Problema:** El microservicio `msvc-ventas` tenía el `emprendedorId` hardcodeado a `1L`. Esto causaba que las ventas de Sigchos (ID `2`) aparecieran en el panel del administrador global o de otro emprendedor, y que Sigchos no viera sus propias ventas.
+
+**Archivos modificados:**
+- `Microservicios\msvc-ventas\src\main\java\com\example\msvc_ventas\application\dto\VentaRequestDto.java`
+- `Microservicios\msvc-ventas\src\main\java\com\example\msvc_ventas\application\mapper\VentaMapper.java`
+- `Microservicios\msvc-ventas\src\main\java\com\example\msvc_ventas\application\service\VentaApplicationService.java`
+
+**Qué se cambió:**
+- **DTO:** Se añadió el campo `emprendedorId` a `VentaRequestDto`.
+- **Mapper:** Se actualizó `VentaMapper` para usar el ID del DTO en lugar del valor fijo `1L`.
+- **Logging:** Se añadieron logs detallados en `VentaApplicationService` para rastrear la creación de ventas y detectar fallos en la persistencia.
+
+### Cambio 26 — Frontend: Persistencia de Datos y Envío de Emprendedor
+
+**Problemas:**
+1. El frontend no enviaba el `emprendedorId` al backend.
+2. Al ser redireccionado desde Payphone, existía el riesgo de perder los datos del cliente guardados en el estado de React.
+
+**Archivos modificados:**
+- `avalon-react-10.1.0\services\cartService.ts`
+- `avalon-react-10.1.0\app\(main)\checkout\components\PayphoneForm.tsx`
+- `avalon-react-10.1.0\app\(main)\checkout\payphone-confirmacion\page.tsx`
+
+**Qué se cambió:**
+- **CartService:** Ahora extrae el `emprendedorId` del primer producto del carrito y lo envía en el `POST /api/ventas`.
+- **PayphoneForm:** Se añadió un respaldo automático de `clienteData` en `localStorage` justo antes del pago, asegurando que estén disponibles al volver de Payphone.
+- **Página de Confirmación:** Se mejoró el manejo de errores y el feedback visual. Si la creación de la venta falla, se muestra un mensaje de error crítico con instrucciones para el usuario, en lugar de un mensaje de éxito falso.
+
+### Efecto Final
+- Las ventas ahora se guardan con el ID correcto del emprendedor (ej: Sigchos = 2).
+- El historial de compras del cliente se vincula correctamente.
+- Se eliminó la fragilidad de pérdida de datos por redirecciones externas.
+
+---
+
+## Instrucciones de Reinicio (Sesión 7)
+
+1. **Backend:** Reiniciar **`msvc-ventas`** (Puerto 8083) para aplicar los cambios en el DTO y el Mapper.
+2. **Frontend:** Recargar la página del carrito para asegurar que los nuevos campos se envíen correctamente.

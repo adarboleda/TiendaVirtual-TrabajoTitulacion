@@ -70,6 +70,18 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Respaldar datos del cliente en localStorage para la página de confirmación
+    useEffect(() => {
+        if (clienteData && Object.keys(clienteData).length > 0) {
+            const saveLocal = async () => {
+                const service = (await import('../../../../services/clientesService')).default;
+                service.guardarDatosClienteLocal(clienteData);
+                console.log('[PayphoneForm] Datos del cliente respaldados para confirmación');
+            };
+            saveLocal();
+        }
+    }, [clienteData]);
+
     // Cargar el script del SDK de Payphone
     useEffect(() => {
         if (loadingTokens) return;
