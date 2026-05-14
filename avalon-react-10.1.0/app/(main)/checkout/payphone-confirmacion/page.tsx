@@ -25,10 +25,25 @@ function PayphoneConfirmationContent() {
     useEffect(() => {
         const id = searchParams.get('id');
         const clientTxId = searchParams.get('clientTransactionId');
+        const emprendedorIdRaw = searchParams.get('emprendedorId');
+        
+        // Limpiar el ID en caso de que Payphone haya concatenado mal los parámetros
+        let emprendedorId = emprendedorIdRaw?.split('?')[0];
+
+        // FALLBACK: Si no viene en la URL, intentar obtenerlo del carrito actual
+        if (!emprendedorId) {
+            const summary = cartService.getCartSummary();
+            if (summary.items.length > 0) {
+                emprendedorId = summary.items[0].producto.empresa?.id?.toString();
+                console.log('[Payphone] emprendedorId recuperado del carrito (fallback):', emprendedorId);
+            }
+        }
+
+        console.log('[Payphone] Parámetros de URL finales:', { id, clientTxId, emprendedorId });
 
         if (!id || !clientTxId) {
-            setStatus('error');
-            setErrorMessage('Faltan parámetros en la URL (id o clientTransactionId).');
+            console.error('[Payphone] Faltan parámetros requeridos:', { id, clientTxId });
+            setErrorMessage('Faltan parámetros de transacción en la URL.');
             setLoading(false);
             return;
         }
@@ -38,7 +53,12 @@ function PayphoneConfirmationContent() {
 
         const confirmar = async () => {
             try {
-                const result = await payphoneService.confirmarPago({ id, clientTxId });
+                console.log('[Payphone] Iniciando confirmación con emprendedorId:', emprendedorId);
+                const result = await payphoneService.confirmarPago({ 
+                    id, 
+                    clientTxId, 
+                    emprendedorId: emprendedorId || undefined 
+                });
                 setPaymentDetails(result);
 
                 if (result.statusCode === 3) {

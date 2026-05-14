@@ -32,53 +32,107 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3, ti
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { id, clientTxId } = body;
+        const { id, clientTxId, emprendedorId } = body;
 
-        console.log('[Payphone Confirm] Parámetros recibidos:', { id, clientTxId });
+        console.log('[Payphone Confirm] Iniciando proceso de confirmación');
+        console.log('[Payphone Confirm] Body recibido:', JSON.stringify(body));
 
         if (!id || !clientTxId) {
+            console.warn('[Payphone Confirm] Faltan parámetros:', { id, clientTxId });
             return NextResponse.json({ error: 'Faltan parámetros requeridos (id o clientTxId)' }, { status: 400 });
         }
 
-        const token = process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || process.env.PAYPHONE_TOKEN;
-        if (!token || token === 'AQUI_PON_TU_TOKEN_DE_PAYPHONE') {
-            console.error('[Payphone Confirm] TOKEN no configurado');
-            return NextResponse.json({ error: 'Token de Payphone no configurado en el servidor' }, { status: 500 });
+        // Intentar obtener el token de la base de datos si tenemos el emprendedorId
+        let token = process.env.PAYPHONE_TOKEN || process.env.NEXT_PUBLIC_PAYPHONE_TOKEN;
+        console.log('[Payphone Confirm] Token inicial (env):', token ? 'Configurado' : 'No configurado');
+        
+        // Validar que emprendedorId sea un valor útil y no sea el string "null" o "undefined"
+        const validEmprendedorId = emprendedorId && emprendedorId !== 'null' && emprendedorId !== 'undefined';
+
+        if (validEmprendedorId) {
+            try {
+                // Usamos 127.0.0.1 en lugar de localhost para evitar problemas de resolución IPv6 en algunos entornos
+                const configUrl = `http://127.0.0.1:8084/api/emprendedor/configuracion-pagos/payphone/${emprendedorId}`;
+                console.log(`[Payphone Confirm] Buscando token en DB: ${configUrl}`);
+                
+                const configRes = await fetch(configUrl, { 
+                    cache: 'no-store',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (configRes.ok) {
+                    const configData = await configRes.json();
+                    console.log('[Payphone Confirm] Respuesta de DB recibida:', JSON.stringify(configData));
+                    if (configData.payphoneToken) {
+                        token = configData.payphoneToken;
+                        console.log(`[Payphone Confirm] Token dinámico obtenido correctamente para emprendedor ${emprendedorId}`);
+                    } else {
+                        console.warn(`[Payphone Confirm] El emprendedor ${emprendedorId} no tiene payphoneToken en su configuración de DB.`);
+                    }
+                } else {
+                    const errorText = await configRes.text().catch(() => 'No body');
+                    console.warn(`[Payphone Confirm] Error al obtener config de DB (Status ${configRes.status}):`, errorText);
+                }
+            } catch (dbError: any) {
+                console.error('[Payphone Confirm] Excepción conectando con el microservicio de configuración:', dbError.message);
+            }
+        } else {
+            console.log('[Payphone Confirm] No se proporcionó un emprendedorId válido para búsqueda en DB. Valor recibido:', emprendedorId);
         }
 
+        if (!token || token === 'AQUI_PON_TU_TOKEN_DE_PAYPHONE') {
+            const errorMsg = 'Token de Payphone no configurado';
+            const errorDetails = `No se encontró un token válido en la base de datos para emprendedorId: ${emprendedorId} (Válido: ${validEmprendedorId}). Tampoco hay un token por defecto en .env.local`;
+            console.error('[Payphone Confirm] ERROR FINAL:', errorMsg, '| Details:', errorDetails);
+            
+            return NextResponse.json({ 
+                error: errorMsg,
+                details: errorDetails,
+                receivedId: emprendedorId,
+                isValid: validEmprendedorId
+            }, { status: 500 });
+        }
+
+        // Limpiar el token por si acaso tiene espacios o saltos de línea
+        const cleanToken = token.trim();
+        console.log(`[Payphone Confirm] Usando token (primeros 10 caracteres): ${cleanToken.substring(0, 10)}...`);
+
         const payphoneBody = {
-            id: parseInt(String(id)),
-            clientTxId: String(clientTxId)
+            id: Number(id), // Documentación Cajita: "Número entero que representa el identificador"
+            clientTxId: String(clientTxId) // Documentación Cajita: Usa "clientTxId"
         };
-        console.log('[Payphone Confirm] Enviando a Payphone:', payphoneBody);
+
+        // Construir el referer completo (algunos servidores lo validan así)
+        const fullUrl = new URL(request.url);
+        const referer = fullUrl.toString();
+        const origin = fullUrl.origin;
+
+        console.log('[Payphone Confirm] Enviando a Payphone (PaymentBox API):', payphoneBody);
 
         let response: Response;
         try {
-            response = await fetchWithRetry(
-                "https://pay.payphonetodoesposible.com/api/button/V2/Confirm",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payphoneBody)
+            response = await fetch("https://paymentbox.payphonetodoesposible.com/api/confirm", {
+
+
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/plain, */*",
+                    "Authorization": `Bearer ${cleanToken}`,
+                    "Referer": referer,
+                    "Origin": origin,
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 },
-                3,    // 3 reintentos
-                15000 // 15 segundos por intento
-            );
+                body: JSON.stringify(payphoneBody)
+            });
         } catch (networkError: any) {
-            // No se pudo conectar a Payphone después de todos los reintentos.
-            // El pago YA FUE procesado por Payphone (el usuario fue redirigido por Payphone mismo).
-            // Payphone revertirá solo si no confirmamos en 5 minutos, pero si el pago
-            // ya aparece en el portal de Payphone, podemos registrarlo como aprobado.
-            console.error('[Payphone Confirm] Error de red tras reintentos:', networkError?.cause?.code || networkError?.message);
+
+
+            console.error('[Payphone Confirm] Error de red:', networkError.message);
             return NextResponse.json({
-                error: 'timeout_confirmacion',
-                message: 'No se pudo confirmar con Payphone por un problema de red, pero el pago puede haber sido procesado. Por favor verifica en el portal de Payphone.',
-                id: String(id),
-                clientTxId: String(clientTxId)
-            }, { status: 503 });
+                error: 'Error de red al contactar Payphone',
+                details: networkError.message
+            }, { status: 502 });
         }
 
         // Leer siempre como texto para evitar errores de parseo

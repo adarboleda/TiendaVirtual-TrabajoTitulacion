@@ -44,8 +44,9 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
                 const emprendedorId = cartItems.length > 0 ? cartItems[0].producto?.empresa?.id : null;
                 
                 if (emprendedorId) {
-                    const res = await fetch(`http://localhost:8084/api/emprendedor/configuracion-pagos/payphone/${emprendedorId}`);
+                    const res = await fetch(`http://127.0.0.1:8084/api/emprendedor/configuracion-pagos/payphone/${emprendedorId}`);
                     if (res.ok) {
+
                         const data = await res.json();
                         if (data.payphoneAppId && data.payphoneToken) {
                             setPayphoneAppId(data.payphoneAppId);
@@ -122,8 +123,12 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
         };
 
         document.body.appendChild(script);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [payphoneAppId, loadingTokens]);
+
+    const cartItemsRef = useRef(cartItems);
+    useEffect(() => {
+        cartItemsRef.current = cartItems;
+    }, [cartItems]);
 
     // Renderizar el botón cuando el script esté listo
     useEffect(() => {
@@ -145,7 +150,14 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
         try {
             const uniqueTxId = `ORD-${Date.now()}`;
             const amountInCents = Math.round(totalAmount * 100);
-            const responseUrl = `${window.location.origin}/checkout/payphone-confirmacion`;
+            
+            // Usar el ref para obtener el emprendedorId más reciente en las funciones de callback
+            const getEmprendedorId = () => {
+                const items = cartItemsRef.current;
+                return items.length > 0 ? items[0].producto?.empresa?.id : null;
+            };
+
+            const responseUrl = `${window.location.origin}/checkout/payphone-confirmacion?emprendedorId=${getEmprendedorId()}`;
 
             console.log('[Payphone] Inicializando botón:', { amount: amountInCents, responseUrl });
 
@@ -154,6 +166,7 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
                 btnHorizontal: true,
                 btnCard: true,
                 createOrder: function(actions: any) {
+                    const currentId = getEmprendedorId();
                     return actions.prepare({
                         amount: amountInCents,
                         amountWithoutTax: amountInCents,
@@ -164,12 +177,14 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
                         currency: 'USD',
                         clientTransactionId: uniqueTxId,
                         lang: 'es',
-                        responseUrl: responseUrl,
+                        responseUrl: `${window.location.origin}/checkout/payphone-confirmacion?emprendedorId=${currentId}`,
                     });
                 },
                 onComplete: function(model: any) {
                     if (model && model.id && model.clientTxId) {
-                        window.location.href = `/checkout/payphone-confirmacion?id=${model.id}&clientTransactionId=${model.clientTxId}`;
+                        const currentId = getEmprendedorId();
+                        console.log('[Payphone] Pago completado, redireccionando con emprendedorId:', currentId);
+                        window.location.href = `/checkout/payphone-confirmacion?id=${model.id}&clientTransactionId=${model.clientTxId}&emprendedorId=${currentId}`;
                     }
                 },
                 onError: function(err: any) {

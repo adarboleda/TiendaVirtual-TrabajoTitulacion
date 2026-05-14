@@ -59,7 +59,7 @@ public class VentaEntity {
     private MetodoPago metodoPago;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado_pago", length = 50)
+    @Column(name = "estado_pago", nullable = false, length = 50)
     private EstadoPago estadoPago;
     
     @Column(name = "comprobante_pago_url", columnDefinition = "TEXT")

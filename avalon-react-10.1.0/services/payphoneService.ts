@@ -16,53 +16,38 @@ export interface PayphoneConfirmResponse {
 }
 
 class PayphoneService {
-    /**
-     * Confirma una transacción de Payphone llamando DIRECTAMENTE desde el navegador,
-     * tal como indica la documentación oficial de Payphone.
-     * El token NEXT_PUBLIC_PAYPHONE_TOKEN ya es público (prefijo NEXT_PUBLIC_).
-     */
-    async confirmarPago(data: PayphoneConfirmRequest): Promise<PayphoneConfirmResponse> {
-        const token = process.env.NEXT_PUBLIC_PAYPHONE_TOKEN;
+    async confirmarPago(data: PayphoneConfirmRequest & { emprendedorId?: string }): Promise<PayphoneConfirmResponse> {
+        console.log('[PayphoneService] Confirmando a través de nuestra API interna:', data);
 
-        if (!token) {
-            throw new Error('NEXT_PUBLIC_PAYPHONE_TOKEN no está configurado en .env.local');
-        }
-
-        const bodyJSON = {
-            id: data.id,           // Se envía como string, tal como llega de la URL
-            clientTxId: data.clientTxId
-        };
-
-        console.log('[PayphoneService] Confirmando directamente con Payphone:', bodyJSON);
-
-        const response = await fetch("https://pay.payphonetodoesposible.com/api/button/V2/Confirm", {
+        const response = await fetch("/api/payphone/confirm", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-                "Referer": document.referrer  // Requerido por Payphone según documentación oficial
+                "Content-Type": "application/json"
             },
-            body: JSON.stringify(bodyJSON)
+            body: JSON.stringify({
+                id: data.id,
+                clientTxId: data.clientTxId,
+                emprendedorId: data.emprendedorId
+            })
         });
 
-        console.log('[PayphoneService] HTTP Status:', response.status);
+        console.log('[PayphoneService] HTTP Status API interna:', response.status);
 
         if (!response.ok) {
-            const errText = await response.text().catch(() => '');
-            console.error('[PayphoneService] Error de Payphone:', response.status, errText);
-            throw new Error(`Error al comunicarse con Payphone (HTTP ${response.status}): ${errText}`);
+            const errJson = await response.json().catch(() => ({}));
+            console.error('[PayphoneService] Error detallado de la API:', {
+                status: response.status,
+                error: errJson.error,
+                details: errJson.details,
+                fullResponse: errJson
+            });
+            throw new Error(errJson.error || `Error al confirmar el pago (HTTP ${response.status})`);
         }
 
-        const responseText = await response.text();
-        console.log('[PayphoneService] Respuesta raw:', responseText);
 
-        // Payphone puede responder con body vacío en pagos vía App Payphone
-        if (!responseText || responseText.trim() === '') {
-            return { statusCode: 3, transactionStatus: 'Approved' };
-        }
-
-        return JSON.parse(responseText) as PayphoneConfirmResponse;
+        return await response.json() as PayphoneConfirmResponse;
     }
+
 }
 
 const payphoneService = new PayphoneService();
