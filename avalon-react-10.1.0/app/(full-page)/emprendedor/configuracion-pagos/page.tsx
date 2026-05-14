@@ -84,11 +84,11 @@ export default function ConfiguracionMetodosPago() {
         try {
             const token = localStorage.getItem('auth_token');
             const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {
                 const data: ConfiguracionPagos = await response.json();
-                
+
                 if (data.datosBancarios) {
                     setBanco(data.datosBancarios.banco);
                     setTipoCuenta(data.datosBancarios.tipoCuenta);
@@ -97,11 +97,11 @@ export default function ConfiguracionMetodosPago() {
                     setCedulaRuc(data.datosBancarios.cedulaRuc);
                     setEmail(data.datosBancarios.email);
                 }
-                
+
                 if (data.qrDeunaUrl) {
                     setQrDeunaUrl(data.qrDeunaUrl);
                 }
-                
+
                 if (data.payphone) {
                     setPayphoneAppId(data.payphone.payphoneAppId);
                     setPayphoneToken(data.payphone.payphoneToken);
@@ -168,9 +168,9 @@ export default function ConfiguracionMetodosPago() {
             const token = localStorage.getItem('auth_token');
             const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/bancarios', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     banco,
@@ -206,7 +206,7 @@ export default function ConfiguracionMetodosPago() {
 
     const onQRUpload = async (event: FileUploadHandlerEvent) => {
         const file = event.files[0];
-        
+
         if (!file) return;
 
         // Validar que sea una imagen
@@ -240,14 +240,14 @@ export default function ConfiguracionMetodosPago() {
             const token = localStorage.getItem('auth_token');
             const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/deuna-qr', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` },
                 body: formData
             });
 
             if (response.ok) {
                 const data = await response.json();
                 setQrDeunaUrl(data.qrUrl);
-                
+
                 toast.current?.show({
                     severity: 'success',
                     summary: 'Éxito',
@@ -277,7 +277,7 @@ export default function ConfiguracionMetodosPago() {
             const token = localStorage.getItem('auth_token');
             const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/deuna-qr', {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.ok) {
@@ -317,9 +317,9 @@ export default function ConfiguracionMetodosPago() {
             const token = localStorage.getItem('auth_token');
             const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/payphone', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     payphoneAppId,
@@ -360,13 +360,9 @@ export default function ConfiguracionMetodosPago() {
     return (
         <>
             <Toast ref={toast} />
-            
+
             <Card title="Configuración de Métodos de Pago" className="shadow-3">
-                <Message
-                    severity="info"
-                    text="Configura tus métodos de pago para que tus clientes puedan realizar compras"
-                    className="mb-4 w-full"
-                />
+                <Message severity="info" text="Configura tus métodos de pago para que tus clientes puedan realizar compras" className="mb-4 w-full" />
 
                 <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
                     {/* Tab 1: Transferencia Bancaria */}
@@ -376,14 +372,7 @@ export default function ConfiguracionMetodosPago() {
                                 <label htmlFor="banco" className="block font-semibold mb-2">
                                     Banco *
                                 </label>
-                                <Dropdown
-                                    id="banco"
-                                    value={banco}
-                                    options={bancos}
-                                    onChange={(e) => setBanco(e.value)}
-                                    placeholder="Selecciona tu banco"
-                                    className={errors.banco ? 'p-invalid' : ''}
-                                />
+                                <Dropdown id="banco" value={banco} options={bancos} onChange={(e) => setBanco(e.value)} placeholder="Selecciona tu banco" className={errors.banco ? 'p-invalid' : ''} />
                                 {errors.banco && <small className="p-error">{errors.banco}</small>}
                             </div>
 
@@ -391,14 +380,7 @@ export default function ConfiguracionMetodosPago() {
                                 <label htmlFor="tipoCuenta" className="block font-semibold mb-2">
                                     Tipo de Cuenta *
                                 </label>
-                                <Dropdown
-                                    id="tipoCuenta"
-                                    value={tipoCuenta}
-                                    options={tiposCuenta}
-                                    onChange={(e) => setTipoCuenta(e.value)}
-                                    placeholder="Selecciona el tipo"
-                                    className={errors.tipoCuenta ? 'p-invalid' : ''}
-                                />
+                                <Dropdown id="tipoCuenta" value={tipoCuenta} options={tiposCuenta} onChange={(e) => setTipoCuenta(e.value)} placeholder="Selecciona el tipo" className={errors.tipoCuenta ? 'p-invalid' : ''} />
                                 {errors.tipoCuenta && <small className="p-error">{errors.tipoCuenta}</small>}
                             </div>
 
@@ -406,13 +388,7 @@ export default function ConfiguracionMetodosPago() {
                                 <label htmlFor="numeroCuenta" className="block font-semibold mb-2">
                                     Número de Cuenta *
                                 </label>
-                                <InputText
-                                    id="numeroCuenta"
-                                    value={numeroCuenta}
-                                    onChange={(e) => setNumeroCuenta(e.target.value)}
-                                    placeholder="1234567890"
-                                    className={errors.numeroCuenta ? 'p-invalid' : ''}
-                                />
+                                <InputText id="numeroCuenta" value={numeroCuenta} onChange={(e) => setNumeroCuenta(e.target.value)} placeholder="1234567890" className={errors.numeroCuenta ? 'p-invalid' : ''} />
                                 {errors.numeroCuenta && <small className="p-error">{errors.numeroCuenta}</small>}
                             </div>
 
@@ -420,13 +396,7 @@ export default function ConfiguracionMetodosPago() {
                                 <label htmlFor="titular" className="block font-semibold mb-2">
                                     Titular de la Cuenta *
                                 </label>
-                                <InputText
-                                    id="titular"
-                                    value={titular}
-                                    onChange={(e) => setTitular(e.target.value)}
-                                    placeholder="Juan Pérez"
-                                    className={errors.titular ? 'p-invalid' : ''}
-                                />
+                                <InputText id="titular" value={titular} onChange={(e) => setTitular(e.target.value)} placeholder="Juan Pérez" className={errors.titular ? 'p-invalid' : ''} />
                                 {errors.titular && <small className="p-error">{errors.titular}</small>}
                             </div>
 
@@ -434,13 +404,7 @@ export default function ConfiguracionMetodosPago() {
                                 <label htmlFor="cedulaRuc" className="block font-semibold mb-2">
                                     Cédula o RUC *
                                 </label>
-                                <InputText
-                                    id="cedulaRuc"
-                                    value={cedulaRuc}
-                                    onChange={(e) => setCedulaRuc(e.target.value)}
-                                    placeholder="1234567890"
-                                    className={errors.cedulaRuc ? 'p-invalid' : ''}
-                                />
+                                <InputText id="cedulaRuc" value={cedulaRuc} onChange={(e) => setCedulaRuc(e.target.value)} placeholder="1234567890" className={errors.cedulaRuc ? 'p-invalid' : ''} />
                                 {errors.cedulaRuc && <small className="p-error">{errors.cedulaRuc}</small>}
                             </div>
 
@@ -448,25 +412,12 @@ export default function ConfiguracionMetodosPago() {
                                 <label htmlFor="email" className="block font-semibold mb-2">
                                     Email de contacto *
                                 </label>
-                                <InputText
-                                    id="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="correo@ejemplo.com"
-                                    type="email"
-                                    className={errors.email ? 'p-invalid' : ''}
-                                />
+                                <InputText id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@ejemplo.com" type="email" className={errors.email ? 'p-invalid' : ''} />
                                 {errors.email && <small className="p-error">{errors.email}</small>}
                             </div>
 
                             <div className="col-12">
-                                <Button
-                                    label="Guardar Datos Bancarios"
-                                    icon="pi pi-save"
-                                    onClick={guardarDatosBancarios}
-                                    loading={loading}
-                                    className="mt-3"
-                                />
+                                <Button label="Guardar Datos Bancarios" icon="pi pi-save" onClick={guardarDatosBancarios} loading={loading} className="mt-3" />
                             </div>
                         </div>
                     </TabPanel>
@@ -476,62 +427,32 @@ export default function ConfiguracionMetodosPago() {
                         <div className="text-center">
                             {qrDeunaUrl ? (
                                 <div>
-                                    <Message
-                                        severity="success"
-                                        text="Ya tienes configurado tu código QR de Deuna"
-                                        className="mb-4 w-full justify-content-start"
-                                    />
+                                    <Message severity="success" text="Ya tienes configurado tu código QR de Deuna" className="mb-4 w-full justify-content-start" />
 
                                     <div className="mb-4">
                                         <div className="inline-block p-4 border-round shadow-3" style={{ backgroundColor: 'white' }}>
-                                            <Image
-                                                src={qrDeunaUrl}
-                                                alt="QR Deuna"
-                                                width="250"
-                                                height="250"
-                                                preview
-                                            />
+                                            <Image src={qrDeunaUrl} alt="QR Deuna" width="250" height="250" preview />
                                         </div>
                                     </div>
 
-                                    <Button
-                                        label="Eliminar QR"
-                                        icon="pi pi-trash"
-                                        severity="danger"
-                                        onClick={eliminarQR}
-                                        loading={loading}
-                                        outlined
-                                    />
+                                    <Button label="Eliminar QR" icon="pi pi-trash" severity="danger" onClick={eliminarQR} loading={loading} outlined />
                                 </div>
                             ) : (
                                 <div>
-                                    <Message
-                                        severity="warn"
-                                        text="Sube tu código QR de Deuna para que tus clientes puedan pagar"
-                                        className="mb-4 w-full justify-content-start"
-                                    />
+                                    <Message severity="warn" text="Sube tu código QR de Deuna para que tus clientes puedan pagar" className="mb-4 w-full justify-content-start" />
 
                                     <div className="mb-3">
                                         <i className="pi pi-qrcode text-6xl mb-3" style={{ color: '#9333ea' }}></i>
                                         <p className="text-600">
-                                            Sube una imagen de tu código QR de Deuna.<br />
-                                            Formatos aceptados: JPG, PNG<br />
+                                            Sube una imagen de tu código QR de Deuna.
+                                            <br />
+                                            Formatos aceptados: JPG, PNG
+                                            <br />
                                             Tamaño máximo: 5MB
                                         </p>
                                     </div>
 
-                                    <FileUpload
-                                        mode="basic"
-                                        name="qrImage"
-                                        accept="image/*"
-                                        maxFileSize={5000000}
-                                        customUpload
-                                        uploadHandler={onQRUpload}
-                                        auto
-                                        chooseLabel="Seleccionar Imagen"
-                                        className="p-button-outlined"
-                                        disabled={uploadingQR}
-                                    />
+                                    <FileUpload mode="basic" name="qrImage" accept="image/*" maxFileSize={5000000} customUpload uploadHandler={onQRUpload} auto chooseLabel="Seleccionar Imagen" className="p-button-outlined" disabled={uploadingQR} />
 
                                     {uploadingQR && (
                                         <div className="mt-3">
@@ -548,47 +469,25 @@ export default function ConfiguracionMetodosPago() {
                     <TabPanel header="Payphone" leftIcon="pi pi-mobile mr-2">
                         <div className="grid p-fluid">
                             <div className="col-12 mb-4">
-                                <Message
-                                    severity="info"
-                                    text="Ingresa las credenciales de tu aplicación en Payphone Developer para recibir pagos directamente en tu cuenta."
-                                    className="w-full justify-content-start"
-                                />
+                                <Message severity="info" text="Ingresa las credenciales de tu aplicación en Payphone Developer para recibir pagos directamente en tu cuenta." className="w-full justify-content-start" />
                             </div>
 
                             <div className="col-12 md:col-6">
                                 <label htmlFor="payphoneAppId" className="block font-semibold mb-2">
                                     Payphone App ID *
                                 </label>
-                                <InputText
-                                    id="payphoneAppId"
-                                    value={payphoneAppId}
-                                    onChange={(e) => setPayphoneAppId(e.target.value)}
-                                    placeholder="Ej: sHCWllJKakqahJaUTCLyw"
-                                />
+                                <InputText id="payphoneAppId" value={payphoneAppId} onChange={(e) => setPayphoneAppId(e.target.value)} placeholder="Ej: qB7M528y26Y6Qk7673924v" />
                             </div>
 
                             <div className="col-12 md:col-6">
                                 <label htmlFor="payphoneToken" className="block font-semibold mb-2">
                                     Payphone Token *
                                 </label>
-                                <InputText
-                                    id="payphoneToken"
-                                    value={payphoneToken}
-                                    onChange={(e) => setPayphoneToken(e.target.value)}
-                                    placeholder="Ingresa tu token de autorización"
-                                    type="password"
-                                />
+                                <InputText id="payphoneToken" value={payphoneToken} onChange={(e) => setPayphoneToken(e.target.value)} placeholder="Ingresa tu token de autorización" type="password" />
                             </div>
 
                             <div className="col-12">
-                                <Button
-                                    label="Guardar Credenciales Payphone"
-                                    icon="pi pi-save"
-                                    onClick={guardarPayphone}
-                                    loading={loading}
-                                    className="mt-3"
-                                    style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
-                                />
+                                <Button label="Guardar Credenciales Payphone" icon="pi pi-save" onClick={guardarPayphone} loading={loading} className="mt-3" style={{ backgroundColor: '#f97316', borderColor: '#f97316' }} />
                             </div>
                         </div>
                     </TabPanel>
