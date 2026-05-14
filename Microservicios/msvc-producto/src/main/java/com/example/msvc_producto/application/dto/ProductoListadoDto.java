@@ -15,13 +15,14 @@ public class ProductoListadoDto {
     private String imagen;
     private String categoriaNombre;
     private String empresaNombre;
+    private Long empresaId;
 
     // Campos para inventario (se llenarán después)
     private Integer inventarioCantidad;
 
     // Constructor para query nativa (sin inventario y sin IDs de relaciones)
     public ProductoListadoDto(Long id, String nombre, String descripcion, Double precio,
-                              String imagen, String categoriaNombre, String empresaNombre) {
+                              String imagen, String categoriaNombre, String empresaNombre, Long empresaId) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -29,6 +30,7 @@ public class ProductoListadoDto {
         this.imagen = imagen;
         this.categoriaNombre = categoriaNombre;
         this.empresaNombre = empresaNombre;
+        this.empresaId = empresaId;
         this.inventarioCantidad = 0;
     }
 }

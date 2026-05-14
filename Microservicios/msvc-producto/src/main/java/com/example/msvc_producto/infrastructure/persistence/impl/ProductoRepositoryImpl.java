@@ -76,7 +76,8 @@ public class ProductoRepositoryImpl implements ProductoRepository {
                         ((Number) row[3]).doubleValue(), // precio
                         (String) row[4],                 // imagen
                         (String) row[5],                 // categoriaNombre (índice 5)
-                        (String) row[6]                  // empresaNombre (índice 6)
+                        (String) row[6],                 // empresaNombre (índice 6)
+                        ((Number) row[7]).longValue()    // empresaId (índice 7)
                 ))
                 .collect(Collectors.toList());
     }

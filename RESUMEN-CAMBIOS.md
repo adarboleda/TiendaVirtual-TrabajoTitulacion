@@ -625,3 +625,41 @@ Para asegurar que los cambios sean persistentes si se borran los volúmenes de D
 - `db-09-seed-ventas.sql` / `scripts/mysql-init/09-seed-ventas.sql` (Corregido email de cliente para evitar errores 404 en el historial).
 
 **Nota:** Si ya tienes los contenedores corriendo, no es necesario hacer nada (los cambios ya se aplicaron vía SQL directo). Si borras los contenedores y los vuelves a crear, estos scripts se encargarán de dejar todo listo automáticamente.
+---
+
+## SESIÓN 6 — Corrección de Carga de Credenciales Payphone (Multi-Emprendedor)
+
+### Cambio 23 — Backend: Inclusión de `empresaId` en Listado Optimizado
+
+**Problema:** El endpoint `/api/productos/listado` (usado para cargar la tienda rápidamente) no devolvía el ID de la empresa asociada a cada producto. Esto causaba que el frontend asignara un `id: 0` por defecto, rompiendo la carga de tokens de Payphone en el checkout (buscaba `/payphone/0` en lugar del ID real).
+
+**Archivos modificados:**
+- `Microservicios\msvc-producto\src\main\java\com\example\msvc_producto\application\dto\ProductoListadoDto.java`
+- `Microservicios\msvc-producto\src\main\java\com\example\msvc_producto\infrastructure\persistence\repository\ProductoJpaRepository.java`
+- `Microservicios\msvc-producto\src\main\java\com\example\msvc_producto\infrastructure\persistence\impl\ProductoRepositoryImpl.java`
+
+**Qué se cambió:**
+- **DTO:** Se añadió el campo `private Long empresaId;` y se actualizó el constructor manual para recibirlo.
+- **Repositorio (SQL Nativo):** Se añadió `e.id as empresaId` a la cláusula `SELECT` y un `INNER JOIN empresas e` para obtener el ID real de la base de datos.
+- **Implementación:** Se actualizó el mapeo de `Object[] row` para extraer el octavo campo (índice 7) y pasarlo al constructor del DTO.
+
+### Cambio 24 — Frontend: Mapeo de `empresaId` en el Carrito
+
+**Archivo modificado:**
+- `avalon-react-10.1.0\services\productService.ts`
+
+**Qué se cambió:**
+- En el método `obtenerProductos`, se actualizó la lógica de mapeo del endpoint optimizado. Ahora, en lugar de `id: 0`, se asigna `id: dto.empresaId || 0`.
+- Esto garantiza que cuando un producto se añade al carrito, lleve consigo el ID correcto de su empresa/emprendedor.
+
+### Efecto Final
+- El componente `PayphoneForm.tsx` ahora recibe el ID correcto de la empresa (ej: `2` para Sigchos).
+- La llamada a `http://localhost:8084/api/emprendedor/configuracion-pagos/payphone/2` tiene éxito.
+- Las credenciales dinámicas se cargan y el botón de Payphone se inicializa correctamente para cada emprendedor de forma independiente.
+
+---
+
+## Instrucciones de Reinicio (Sesión 6)
+
+1. **Backend:** Es necesario reiniciar el microservicio **`msvc-producto`** (Puerto 8081) para que los cambios en el DTO y el Repositorio surtan efecto.
+2. **Frontend:** No es necesario reiniciar, pero se recomienda limpiar el carrito y recargar la página de productos para asegurar que los nuevos datos se carguen en el estado local.

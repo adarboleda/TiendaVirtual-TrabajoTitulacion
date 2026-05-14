@@ -24,7 +24,8 @@ public interface ProductoJpaRepository extends JpaRepository<ProductoEntity, Lon
         p.precio,
         p.imagen,
         c.nombre as categoriaNombre,
-        e.nombre as empresaNombre
+        e.nombre as empresaNombre,
+        e.id as empresaId
     FROM productos p
     INNER JOIN categorias c ON c.id = p.categoria_id
     INNER JOIN empresas e ON e.id = p.empresa_id

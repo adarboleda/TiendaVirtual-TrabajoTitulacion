@@ -221,7 +221,7 @@ class ProductService {
                             fechaActualizacion: ''
                         },
                         empresa: {
-                            id: 0,
+                            id: dto.empresaId || 0,
                             nombre: dto.empresaNombre || 'Sin empresa',
                             descripcion: '',
                             contacto: '',
