@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Card } from 'primereact/card';
 import { ProgressSpinner } from 'primereact/progressspinner';
+import cartService from '../../../../services/cartService';
 
 // Para TypeScript, definimos globalmente el objeto payphone
 declare global {
@@ -149,7 +150,6 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
 
         try {
             const uniqueTxId = `ORD-${Date.now()}`;
-            const amountInCents = Math.round(totalAmount * 100);
             
             // Usar el ref para obtener el emprendedorId más reciente en las funciones de callback
             const getEmprendedorId = () => {
@@ -159,7 +159,19 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
 
             const responseUrl = `${window.location.origin}/checkout/payphone-confirmacion?emprendedorId=${getEmprendedorId()}`;
 
-            console.log('[Payphone] Inicializando botón:', { amount: amountInCents, responseUrl });
+            // Obtener el resumen actualizado del carrito para desglosar impuestos y envío
+            const summary = cartService.getCartSummary();
+            const amountInCents = Math.round(summary.total * 100);
+            const amountWithTaxInCents = Math.round(summary.subtotal * 100);
+            const taxInCents = Math.round(summary.impuestos * 100);
+            const serviceInCents = Math.round(summary.envio * 100);
+
+            console.log('[Payphone] Inicializando botón con desglose:', { 
+                total: amountInCents, 
+                base: amountWithTaxInCents, 
+                iva: taxInCents, 
+                envio: serviceInCents 
+            });
 
             window.payphone.Button({
                 token: payphoneToken,
@@ -169,10 +181,10 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
                     const currentId = getEmprendedorId();
                     return actions.prepare({
                         amount: amountInCents,
-                        amountWithoutTax: amountInCents,
-                        amountWithTax: 0,
-                        tax: 0,
-                        service: 0,
+                        amountWithoutTax: 0,
+                        amountWithTax: amountWithTaxInCents,
+                        tax: taxInCents,
+                        service: serviceInCents,
                         tip: 0,
                         currency: 'USD',
                         clientTransactionId: uniqueTxId,
