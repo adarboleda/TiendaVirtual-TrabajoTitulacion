@@ -95,8 +95,10 @@ export default function HistorialCompras() {
             }
             
             if (!clienteResponse.ok) {
-                console.error('❌ Cliente no encontrado');
-                throw new Error('No se encontró información del cliente. Por favor, complete su perfil.');
+                console.log('⚠️ Cliente no encontrado en la base de datos (probablemente usuario nuevo sin compras).');
+                setCompras([]);
+                setLoading(false);
+                return;
             }
             
             const cliente = await clienteResponse.json();

@@ -82,6 +82,13 @@ export default function EmprendedorSidebar() {
             highlight: pagosPendientes > 0
         },
         {
+            label: 'Configurar Pagos',
+            icon: 'pi pi-cog',
+            url: '/emprendedor/configuracion-pagos',
+            badge: null,
+            highlight: false
+        },
+        {
             label: 'Logística',
             icon: 'pi pi-truck',
             url: '/emprendedor/logistica',

@@ -12,4 +12,5 @@ public class ConfiguracionPagosDto {
     private Long emprendedorId;
     private DatosBancariosDto datosBancarios;
     private String qrDeunaUrl;
+    private PayphoneDto payphone;
 }

@@ -50,3 +50,27 @@ CREATE TABLE IF NOT EXISTS emprendedores (
     INDEX idx_emprendedores_usuario_id (usuario_id),
     INDEX idx_emprendedores_empresa_id (empresa_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- TABLA: configuracion_metodos_pago
+-- ============================================
+CREATE TABLE IF NOT EXISTS configuracion_metodos_pago (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    emprendedor_id BIGINT NOT NULL,
+    banco VARCHAR(100),
+    tipo_cuenta VARCHAR(50),
+    numero_cuenta VARCHAR(50),
+    titular VARCHAR(255),
+    cedula_ruc VARCHAR(20),
+    email VARCHAR(255),
+    qr_deuna_url TEXT,
+    payphone_app_id VARCHAR(255),
+    payphone_token TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uk_emprendedor_config (emprendedor_id),
+    CONSTRAINT fk_config_pagos_emprendedor FOREIGN KEY (emprendedor_id)
+        REFERENCES emprendedores(id) ON DELETE CASCADE,
+    INDEX idx_config_pagos_emprendedor (emprendedor_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

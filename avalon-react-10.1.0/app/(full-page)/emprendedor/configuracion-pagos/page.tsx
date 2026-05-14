@@ -22,11 +22,17 @@ interface DatosBancarios {
     email: string;
 }
 
+interface PayphoneConfig {
+    payphoneAppId: string;
+    payphoneToken: string;
+}
+
 interface ConfiguracionPagos {
     id?: number;
     emprendedorId: number;
     datosBancarios?: DatosBancarios;
     qrDeunaUrl?: string;
+    payphone?: PayphoneConfig;
 }
 
 const bancos = [
@@ -63,6 +69,10 @@ export default function ConfiguracionMetodosPago() {
     const [qrDeunaUrl, setQrDeunaUrl] = useState<string | null>(null);
     const [uploadingQR, setUploadingQR] = useState(false);
 
+    // Payphone
+    const [payphoneAppId, setPayphoneAppId] = useState('');
+    const [payphoneToken, setPayphoneToken] = useState('');
+
     const [errors, setErrors] = useState<any>({});
 
     useEffect(() => {
@@ -72,7 +82,10 @@ export default function ConfiguracionMetodosPago() {
     const cargarConfiguracion = async () => {
         setLoadingData(true);
         try {
-            const response = await fetch('/api/emprendedor/configuracion-pagos');
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (response.ok) {
                 const data: ConfiguracionPagos = await response.json();
                 
@@ -87,6 +100,11 @@ export default function ConfiguracionMetodosPago() {
                 
                 if (data.qrDeunaUrl) {
                     setQrDeunaUrl(data.qrDeunaUrl);
+                }
+                
+                if (data.payphone) {
+                    setPayphoneAppId(data.payphone.payphoneAppId);
+                    setPayphoneToken(data.payphone.payphoneToken);
                 }
             }
         } catch (error) {
@@ -147,9 +165,13 @@ export default function ConfiguracionMetodosPago() {
 
         setLoading(true);
         try {
-            const response = await fetch('/api/emprendedor/configuracion-pagos/bancarios', {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/bancarios', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     banco,
                     tipoCuenta,
@@ -215,8 +237,10 @@ export default function ConfiguracionMetodosPago() {
         formData.append('qrImage', file);
 
         try {
-            const response = await fetch('/api/emprendedor/configuracion-pagos/deuna-qr', {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/deuna-qr', {
                 method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
 
@@ -250,8 +274,10 @@ export default function ConfiguracionMetodosPago() {
 
         setLoading(true);
         try {
-            const response = await fetch('/api/emprendedor/configuracion-pagos/deuna-qr', {
-                method: 'DELETE'
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/deuna-qr', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (response.ok) {
@@ -268,6 +294,54 @@ export default function ConfiguracionMetodosPago() {
                 severity: 'error',
                 summary: 'Error',
                 detail: 'No se pudo eliminar el código QR',
+                life: 3000
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const guardarPayphone = async () => {
+        if (!payphoneAppId || !payphoneToken) {
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Por favor completa el App ID y el Token',
+                life: 3000
+            });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/payphone', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    payphoneAppId,
+                    payphoneToken
+                })
+            });
+
+            if (response.ok) {
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Credenciales de Payphone guardadas correctamente',
+                    life: 3000
+                });
+            } else {
+                throw new Error('Error al guardar');
+            }
+        } catch (error) {
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudieron guardar las credenciales de Payphone',
                 life: 3000
             });
         } finally {
@@ -467,6 +541,55 @@ export default function ConfiguracionMetodosPago() {
                                     )}
                                 </div>
                             )}
+                        </div>
+                    </TabPanel>
+
+                    {/* Tab 3: Payphone */}
+                    <TabPanel header="Payphone" leftIcon="pi pi-mobile mr-2">
+                        <div className="grid p-fluid">
+                            <div className="col-12 mb-4">
+                                <Message
+                                    severity="info"
+                                    text="Ingresa las credenciales de tu aplicación en Payphone Developer para recibir pagos directamente en tu cuenta."
+                                    className="w-full justify-content-start"
+                                />
+                            </div>
+
+                            <div className="col-12 md:col-6">
+                                <label htmlFor="payphoneAppId" className="block font-semibold mb-2">
+                                    Payphone App ID *
+                                </label>
+                                <InputText
+                                    id="payphoneAppId"
+                                    value={payphoneAppId}
+                                    onChange={(e) => setPayphoneAppId(e.target.value)}
+                                    placeholder="Ej: sHCWllJKakqahJaUTCLyw"
+                                />
+                            </div>
+
+                            <div className="col-12 md:col-6">
+                                <label htmlFor="payphoneToken" className="block font-semibold mb-2">
+                                    Payphone Token *
+                                </label>
+                                <InputText
+                                    id="payphoneToken"
+                                    value={payphoneToken}
+                                    onChange={(e) => setPayphoneToken(e.target.value)}
+                                    placeholder="Ingresa tu token de autorización"
+                                    type="password"
+                                />
+                            </div>
+
+                            <div className="col-12">
+                                <Button
+                                    label="Guardar Credenciales Payphone"
+                                    icon="pi pi-save"
+                                    onClick={guardarPayphone}
+                                    loading={loading}
+                                    className="mt-3"
+                                    style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
+                                />
+                            </div>
                         </div>
                     </TabPanel>
                 </TabView>

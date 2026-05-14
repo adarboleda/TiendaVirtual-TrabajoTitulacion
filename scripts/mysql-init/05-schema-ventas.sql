@@ -35,6 +35,11 @@ CREATE TABLE IF NOT EXISTS ventas (
     impuesto DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (impuesto >= 0),
     total DECIMAL(10,2) NOT NULL CHECK (total >= 0),
     estado ENUM('PENDIENTE', 'COMPLETADA', 'CANCELADA') NOT NULL DEFAULT 'PENDIENTE',
+    metodo_pago ENUM('TRANSFERENCIA', 'TARJETA', 'DEUNA'),
+    estado_pago ENUM('PENDIENTE', 'PROCESANDO', 'APROBADO', 'RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
+    comprobante_pago_url TEXT,
+    referencia_transaccion VARCHAR(255),
+    fecha_pago TIMESTAMP NULL,
     fecha_venta TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -78,8 +83,10 @@ CREATE TABLE IF NOT EXISTS pagos (
     numero_cuenta VARCHAR(50),
     titular_cuenta VARCHAR(100),
     numero_transaccion VARCHAR(100),
+    referencia_transaccion VARCHAR(255),
     numero_tarjeta_parcial VARCHAR(20),
     qr_code TEXT,
+    comprobante_url TEXT,
     monto DECIMAL(10,2) NOT NULL CHECK (monto >= 0),
     fecha_pago TIMESTAMP NULL,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -89,4 +96,33 @@ CREATE TABLE IF NOT EXISTS pagos (
     INDEX idx_pagos_venta_id (venta_id),
     INDEX idx_pagos_estado (estado_pago),
     INDEX idx_pagos_metodo (metodo_pago)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- TABLA: seguimiento_logistica
+-- ============================================
+CREATE TABLE IF NOT EXISTS seguimiento_logistica (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    venta_id BIGINT NOT NULL,
+    estado_logistica ENUM(
+        'PAGO_APROBADO',
+        'EN_PREPARACION',
+        'LISTO_PARA_ENVIO',
+        'EN_CAMINO',
+        'EN_PUNTO_ENTREGA',
+        'ENTREGADO',
+        'CANCELADO'
+    ) NOT NULL,
+    descripcion TEXT,
+    ubicacion VARCHAR(255),
+    responsable VARCHAR(100),
+    observaciones TEXT,
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_seguimiento_logistica_venta
+        FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE,
+    INDEX idx_venta_id (venta_id),
+    INDEX idx_estado_logistica (estado_logistica),
+    INDEX idx_fecha_actualizacion (fecha_actualizacion)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

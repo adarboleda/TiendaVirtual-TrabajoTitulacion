@@ -67,3 +67,8 @@ SELECT
 FROM usuarios u 
 WHERE u.username = 'grandes_foods'
 ON DUPLICATE KEY UPDATE usuario_id=usuario_id;
+
+
+-- Nota: Las credenciales de Payphone deben configurarse desde la aplicación
+-- para evitar exponer tokens sensibles en el repositorio.
+

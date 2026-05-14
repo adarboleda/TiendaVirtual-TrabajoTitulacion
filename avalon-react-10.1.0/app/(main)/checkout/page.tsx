@@ -618,6 +618,7 @@ const CheckoutPage: React.FC = () => {
                     primaryColor={primaryColor}
                     totalAmount={cartSummary?.total || 0}
                     clienteData={clienteData}
+                    cartItems={cartSummary?.items || []}
                 />
             )}
 

@@ -2,7 +2,10 @@ package com.example.demo.presentation.controller;
 
 import com.example.demo.application.dto.ConfiguracionPagosDto;
 import com.example.demo.application.dto.DatosBancariosDto;
+import com.example.demo.application.dto.PayphoneDto;
 import com.example.demo.domain.service.ConfiguracionPagosService;
+import com.example.demo.infrastructure.persistence.repository.EmprendedorJpaRepository;
+import com.example.demo.infrastructure.persistence.repository.UsuarioJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +21,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/emprendedor/configuracion-pagos")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ConfiguracionPagosController {
 
     private final ConfiguracionPagosService configuracionPagosService;
+    private final UsuarioJpaRepository usuarioRepository;
+    private final EmprendedorJpaRepository emprendedorRepository;
 
     /**
      * Obtener configuración completa del emprendedor autenticado
@@ -47,6 +51,21 @@ public class ConfiguracionPagosController {
         
         Long emprendedorId = obtenerUsuarioId(authentication);
         ConfiguracionPagosDto config = configuracionPagosService.guardarDatosBancarios(emprendedorId, datosBancarios);
+        
+        return ResponseEntity.ok(config);
+    }
+
+    /**
+     * Guardar datos de Payphone del emprendedor
+     */
+    @PostMapping("/payphone")
+    @PreAuthorize("hasRole('EMP')")
+    public ResponseEntity<ConfiguracionPagosDto> guardarPayphone(
+            @RequestBody PayphoneDto payphoneDto,
+            Authentication authentication) {
+        
+        Long emprendedorId = obtenerUsuarioId(authentication);
+        ConfiguracionPagosDto config = configuracionPagosService.guardarPayphone(emprendedorId, payphoneDto);
         
         return ResponseEntity.ok(config);
     }
@@ -123,19 +142,45 @@ public class ConfiguracionPagosController {
     }
 
     /**
-     * Extraer ID del usuario autenticado
+     * Obtener configuración de Payphone de un emprendedor por empresa_id (para clientes en el checkout).
+     * El frontend envía empresa.id del producto - que coincide con empresa_id en la tabla emprendedores.
+     */
+    @GetMapping("/payphone/{empresaId}")
+    public ResponseEntity<PayphoneDto> obtenerPayphonePorEmprendedor(@PathVariable Long empresaId) {
+        // Resolver emprendedor_id a partir de empresa_id
+        var emprendedorOpt = emprendedorRepository.findByEmpresaId(empresaId);
+        if (emprendedorOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Long emprendedorId = emprendedorOpt.get().getId();
+        
+        return configuracionPagosService.obtenerConfiguracion(emprendedorId)
+                .filter(config -> config.getPayphone() != null)
+                .map(config -> ResponseEntity.ok(config.getPayphone()))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Extraer el emprendedor_id del usuario autenticado
+     * El JWT tiene como subject el username del usuario.
+     * Se busca el usuario por username, luego el emprendedor por usuario_id.
      */
     private Long obtenerUsuarioId(Authentication authentication) {
-        // Ajusta esto según cómo almacenas el ID en el token JWT
-        // Puede ser authentication.getName() si guardas el ID como string
-        // O puedes obtenerlo de los claims del JWT
+        String username = authentication.getName();
         
-        try {
-            return Long.parseLong(authentication.getName());
-        } catch (NumberFormatException e) {
-            // Si getName() devuelve el username, necesitarás buscar el usuario por username
-            // y obtener su ID desde la base de datos
-            throw new RuntimeException("No se pudo obtener el ID del usuario autenticado");
+        // Buscar usuario por username
+        var usuarioOpt = usuarioRepository.findByUsername(username);
+        if (usuarioOpt.isEmpty()) {
+            throw new RuntimeException("Usuario no encontrado: " + username);
         }
+        Long usuarioId = usuarioOpt.get().getId();
+        
+        // Buscar emprendedor por usuario_id
+        var emprendedorOpt = emprendedorRepository.findByUsuarioId(usuarioId);
+        if (emprendedorOpt.isEmpty()) {
+            throw new RuntimeException("No existe un perfil de emprendedor para el usuario: " + username);
+        }
+        
+        return emprendedorOpt.get().getId();
     }
 }

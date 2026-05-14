@@ -63,6 +63,7 @@ export interface CheckoutResult {
     message: string;
     data?: {
         orderId: string;
+        ventaId?: number;
         total: number;
     };
 }

@@ -64,11 +64,13 @@ CREATE TABLE IF NOT EXISTS configuracion_metodos_pago (
     cedula_ruc VARCHAR(20),
     email VARCHAR(255),
     qr_deuna_url TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    payphone_app_id VARCHAR(255),
+    payphone_token TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     UNIQUE KEY uk_emprendedor_config (emprendedor_id),
     CONSTRAINT fk_config_pagos_emprendedor FOREIGN KEY (emprendedor_id)
-        REFERENCES usuarios(id) ON DELETE CASCADE,
+        REFERENCES emprendedores(id) ON DELETE CASCADE,
     INDEX idx_config_pagos_emprendedor (emprendedor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

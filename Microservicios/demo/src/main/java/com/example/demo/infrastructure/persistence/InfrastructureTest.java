@@ -20,7 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 
-import java.security.KeyPair;
+
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -56,6 +56,14 @@ class InfrastructureTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         securityConfig = new SecurityConfig();
+        // Inyectar el secreto JWT usando reflexión Java pura (el archivo está en src/main, no src/test)
+        try {
+            java.lang.reflect.Field field = SecurityConfig.class.getDeclaredField("jwtSecret");
+            field.setAccessible(true);
+            field.set(securityConfig, "TiendaVirtualFeriaDigital2024SecretKeyForJWTSigningMustBe256BitsLong!!");
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo inyectar jwtSecret en SecurityConfig", e);
+        }
     }
 
     // Tests para UsuarioEntity
@@ -423,29 +431,20 @@ class InfrastructureTest {
     }
 
     @Test
-    void testSecurityConfigGenerateRsaKey() {
+    void testSecurityConfigJwtDecoder() {
         // Act
-        KeyPair keyPair = securityConfig.generateRsaKey();
-
-        // Assert
-        assertNotNull(keyPair);
-        assertNotNull(keyPair.getPrivate());
-        assertNotNull(keyPair.getPublic());
-        assertEquals("RSA", keyPair.getPrivate().getAlgorithm());
-        assertEquals("RSA", keyPair.getPublic().getAlgorithm());
-    }
-
-    @Test
-    void testSecurityConfigJwtComponents() {
-        // Arrange
-        KeyPair keyPair = securityConfig.generateRsaKey();
-
-        // Act
-        JwtDecoder jwtDecoder = securityConfig.jwtDecoder(keyPair);
-        JwtEncoder jwtEncoder = securityConfig.jwtEncoder(keyPair);
+        JwtDecoder jwtDecoder = securityConfig.jwtDecoder();
 
         // Assert
         assertNotNull(jwtDecoder);
+    }
+
+    @Test
+    void testSecurityConfigJwtEncoder() {
+        // Act
+        JwtEncoder jwtEncoder = securityConfig.jwtEncoder();
+
+        // Assert
         assertNotNull(jwtEncoder);
     }
 

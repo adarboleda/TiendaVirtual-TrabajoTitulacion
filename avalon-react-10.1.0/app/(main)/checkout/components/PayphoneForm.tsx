@@ -16,13 +16,15 @@ interface PayphoneFormProps {
     primaryColor: string;
     totalAmount: number;
     clienteData: any;
+    cartItems: any[];
 }
 
 const PayphoneForm: React.FC<PayphoneFormProps> = ({
     onDataChange,
     primaryColor,
     totalAmount,
-    clienteData
+    clienteData,
+    cartItems
 }) => {
     const [scriptLoaded, setScriptLoaded] = useState(false);
     const [buttonRendered, setButtonRendered] = useState(false);
@@ -30,8 +32,37 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
     const buttonContainerRef = useRef<HTMLDivElement>(null);
     const renderAttempted = useRef(false);
 
-    const PAYPHONE_APP_ID = process.env.NEXT_PUBLIC_PAYPHONE_APP_ID || '';
-    const PAYPHONE_TOKEN = process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || '';
+    // Lógica para asignar los tokens del emprendedor correspondiente
+    const [payphoneAppId, setPayphoneAppId] = useState('');
+    const [payphoneToken, setPayphoneToken] = useState('');
+    const [loadingTokens, setLoadingTokens] = useState(true);
+
+    useEffect(() => {
+        const fetchTokens = async () => {
+            try {
+                // Determinar el emprendedor_id (empresa.id). En tu seed coinciden.
+                const emprendedorId = cartItems.length > 0 ? cartItems[0].producto?.empresa?.id : null;
+                
+                if (emprendedorId) {
+                    const res = await fetch(`http://localhost:8084/api/emprendedor/configuracion-pagos/payphone/${emprendedorId}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.payphoneAppId && data.payphoneToken) {
+                            setPayphoneAppId(data.payphoneAppId);
+                            setPayphoneToken(data.payphoneToken);
+                            console.log(`[Payphone] Tokens obtenidos para el emprendedor ${emprendedorId}`);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Payphone] Error obteniendo tokens dinámicos:', error);
+            } finally {
+                setLoadingTokens(false);
+            }
+        };
+
+        fetchTokens();
+    }, [cartItems]);
 
     // Notificar al checkout que el método payphone está activo
     useEffect(() => {
@@ -41,8 +72,10 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
 
     // Cargar el script del SDK de Payphone
     useEffect(() => {
-        if (!PAYPHONE_APP_ID) {
-            setErrorMsg('NEXT_PUBLIC_PAYPHONE_APP_ID no está configurado en .env.local');
+        if (loadingTokens) return;
+
+        if (!payphoneAppId) {
+            setErrorMsg('El App ID de Payphone no está configurado para este emprendedor. Contacta al administrador.');
             return;
         }
 
@@ -61,7 +94,7 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
         // scope propio y NO exponen window.payphone globalmente.
         const script = document.createElement('script');
         script.id = 'payphone-script';
-        script.src = `https://pay.payphonetodoesposible.com/api/button/js?appId=${PAYPHONE_APP_ID}`;
+        script.src = `https://pay.payphonetodoesposible.com/api/button/js?appId=${payphoneAppId}`;
         // NO se pone script.type = 'module' — eso rompe el scope global
 
         script.onload = () => {
@@ -78,7 +111,7 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
 
         document.body.appendChild(script);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [PAYPHONE_APP_ID]);
+    }, [payphoneAppId, loadingTokens]);
 
     // Renderizar el botón cuando el script esté listo
     useEffect(() => {
@@ -90,8 +123,8 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
             return;
         }
 
-        if (!PAYPHONE_TOKEN) {
-            setErrorMsg('NEXT_PUBLIC_PAYPHONE_TOKEN no está configurado en .env.local');
+        if (!payphoneToken) {
+            setErrorMsg('El Token de Payphone no está configurado para este emprendedor. Contacta al administrador.');
             return;
         }
 
@@ -105,7 +138,7 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
             console.log('[Payphone] Inicializando botón:', { amount: amountInCents, responseUrl });
 
             window.payphone.Button({
-                token: PAYPHONE_TOKEN,
+                token: payphoneToken,
                 btnHorizontal: true,
                 btnCard: true,
                 createOrder: function(actions: any) {

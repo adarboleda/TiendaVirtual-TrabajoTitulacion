@@ -44,6 +44,13 @@ public class ConfiguracionMetodosPago {
     @Column(name = "qr_deuna_url", columnDefinition = "TEXT")
     private String qrDeunaUrl;
 
+    // Datos de Payphone
+    @Column(name = "payphone_app_id", length = 255)
+    private String payphoneAppId;
+
+    @Column(name = "payphone_token", columnDefinition = "TEXT")
+    private String payphoneToken;
+
     // Metadatos
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

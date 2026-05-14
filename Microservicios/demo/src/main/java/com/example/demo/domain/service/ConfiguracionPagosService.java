@@ -2,6 +2,7 @@ package com.example.demo.domain.service;
 
 import com.example.demo.application.dto.ConfiguracionPagosDto;
 import com.example.demo.application.dto.DatosBancariosDto;
+import com.example.demo.application.dto.PayphoneDto;
 import com.example.demo.domain.model.ConfiguracionMetodosPago;
 import com.example.demo.domain.repository.ConfiguracionMetodosPagoRepository;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,22 @@ public class ConfiguracionPagosService {
         config.setTitular(datosBancarios.getTitular());
         config.setCedulaRuc(datosBancarios.getCedulaRuc());
         config.setEmail(datosBancarios.getEmail());
+        
+        config = configuracionRepository.save(config);
+        return convertirADto(config);
+    }
+
+    /**
+     * Guardar o actualizar datos de Payphone
+     */
+    @Transactional
+    public ConfiguracionPagosDto guardarPayphone(Long emprendedorId, PayphoneDto payphoneDto) {
+        ConfiguracionMetodosPago config = configuracionRepository.findByEmprendedorId(emprendedorId)
+                .orElse(new ConfiguracionMetodosPago());
+        
+        config.setEmprendedorId(emprendedorId);
+        config.setPayphoneAppId(payphoneDto.getPayphoneAppId());
+        config.setPayphoneToken(payphoneDto.getPayphoneToken());
         
         config = configuracionRepository.save(config);
         return convertirADto(config);
@@ -149,6 +166,13 @@ public class ConfiguracionPagosService {
             datosBancarios.setCedulaRuc(config.getCedulaRuc());
             datosBancarios.setEmail(config.getEmail());
             dto.setDatosBancarios(datosBancarios);
+        }
+        
+        if (config.getPayphoneAppId() != null || config.getPayphoneToken() != null) {
+            PayphoneDto payphone = new PayphoneDto();
+            payphone.setPayphoneAppId(config.getPayphoneAppId());
+            payphone.setPayphoneToken(config.getPayphoneToken());
+            dto.setPayphone(payphone);
         }
         
         return dto;

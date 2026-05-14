@@ -43,6 +43,30 @@ function PayphoneConfirmationContent() {
 
                 if (result.statusCode === 3) {
                     setStatus('success');
+                    
+                    // 🚨 AQUI CREAMOS LA VENTA EN EL BACKEND PARA PAYPHONE 🚨
+                    try {
+                        console.log('📝 Creando venta en el backend para Payphone...');
+                        // Como es Payphone, pasamos método como TARJETA y el transactionId como comprobante
+                        const checkoutRes = await cartService.processCheckout(undefined, 'TARJETA', result.transactionId);
+                        
+                        if (checkoutRes.success && checkoutRes.data?.ventaId) {
+                            console.log('✅ Venta creada, confirmando pago en el backend...');
+                            // Completar venta explícitamente si es necesario
+                            await cartService.completarVenta(checkoutRes.data.orderId);
+                        } else {
+                            console.warn('⚠️ La venta no devolvió ID, revisa el historial.', checkoutRes);
+                        }
+                    } catch (e: any) {
+                        console.error('❌ Error creando la venta en el backend después del pago Payphone:', e);
+                        toast.current?.show({
+                            severity: 'warn',
+                            summary: 'Atención',
+                            detail: 'El pago fue exitoso pero hubo un problema guardando la orden. Guarda tu ID de transacción.',
+                            life: 10000
+                        });
+                    }
+
                     cartService.clearCart();
                 } else if (result.statusCode === 2) {
                     setStatus('cancelled');

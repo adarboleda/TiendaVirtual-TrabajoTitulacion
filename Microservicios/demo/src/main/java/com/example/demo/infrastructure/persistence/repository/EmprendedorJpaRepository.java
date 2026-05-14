@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface EmprendedorJpaRepository extends JpaRepository<EmprendedorEntity, Long> {
     Optional<EmprendedorEntity> findByUsuarioId(Long usuarioId);
+    Optional<EmprendedorEntity> findByEmpresaId(Long empresaId);
 }
