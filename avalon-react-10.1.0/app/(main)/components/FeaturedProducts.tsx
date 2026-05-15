@@ -7,6 +7,7 @@ import { Button } from 'primereact/button';
 import { Badge } from 'primereact/badge';
 import { Skeleton } from 'primereact/skeleton';
 import { Dialog } from 'primereact/dialog';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Toast } from 'primereact/toast';
 import { LayoutContext } from '../../../layout/context/layoutcontext';
 import productService, { ProductoResponse } from '../../../services/productService';
@@ -150,6 +151,25 @@ const FeaturedProducts: React.FC = () => {
                 summary: 'Producto Agregado',
                 detail: result.message || 'Producto agregado al carrito',
                 life: 3000
+            });
+        } else if (result.errorType === 'VENDOR_MISMATCH') {
+            confirmDialog({
+                message: result.message,
+                header: 'Conflicto de Empresa',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Sí, vaciar y agregar',
+                rejectLabel: 'Cancelar',
+                accept: () => {
+                    const clearResult = cartService.addToCart(producto, 1, true);
+                    if (clearResult.success) {
+                        toast.current?.show({
+                            severity: 'success',
+                            summary: 'Carrito Actualizado',
+                            detail: 'Se ha vaciado el carrito y agregado el nuevo producto',
+                            life: 3000
+                        });
+                    }
+                }
             });
         } else {
             toast.current?.show({
@@ -394,6 +414,7 @@ const FeaturedProducts: React.FC = () => {
     return (
         <>
             <Toast ref={toast} />
+            <ConfirmDialog />
             
             {/* ✅ CSS OPTIMIZADO PARA GRID */}
             <style jsx>{`

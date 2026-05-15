@@ -72,11 +72,12 @@ export interface ApiResponse<T> {
     success: boolean;
     message: string;
     data?: T;
+    errorType?: 'VENDOR_MISMATCH' | 'STOCK_INSUFFICIENT' | 'OTHER';
 }
 
 class CartService {
     private readonly CART_KEY = 'ecommerce_cart';
-    private readonly TAX_RATE = 0.15; 
+    private readonly TAX_RATE = 0.15;
     private readonly FREE_SHIPPING_THRESHOLD = 50; // Envío gratis sobre $50
     private readonly SHIPPING_COST = 5.99;
     private readonly API_BASE_URL = process.env.NEXT_PUBLIC_VENTAS_API_URL || 'http://localhost:8083';
@@ -85,31 +86,53 @@ class CartService {
 
     getCart(): CartItem[] {
         if (typeof window === 'undefined') return [];
-        
+
         const cartData = localStorage.getItem(this.CART_KEY);
         return cartData ? JSON.parse(cartData) : [];
     }
 
     saveCart(cart: CartItem[]): void {
         if (typeof window === 'undefined') return;
-        
+
         localStorage.setItem(this.CART_KEY, JSON.stringify(cart));
         this.emitCartUpdate();
     }
 
-    addToCart(producto: Producto, cantidad: number = 1): ApiResponse<CartItem> {
+    addToCart(producto: Producto, cantidad: number = 1, clearConflict: boolean = false): ApiResponse<CartItem> {
         try {
-            const cart = this.getCart();
-            const existingItemIndex = cart.findIndex(item => item.producto.id === producto.id);
+            let cart = this.getCart();
+
+            // Validar restricción de única empresa por pedido
+            if (cart.length > 0) {
+                const firstItemEmpresaId = cart[0].producto.empresa?.id;
+                const newItemEmpresaId = producto.empresa?.id;
+
+                if (firstItemEmpresaId !== newItemEmpresaId) {
+                    if (clearConflict) {
+                        // Si el usuario aceptó limpiar el conflicto, vaciamos el carrito
+                        this.clearCart();
+                        cart = [];
+                    } else {
+                        return {
+                            success: false,
+                            message: `Solo puedes agregar productos de la empresa "${cart[0].producto.empresa?.nombre}". ¿Deseas vaciar el carrito para agregar este producto?`,
+                            errorType: 'VENDOR_MISMATCH'
+                        };
+                    }
+                }
+            }
+
+            const existingItemIndex = cart.findIndex((item) => item.producto.id === producto.id);
 
             if (existingItemIndex > -1) {
                 const existingItem = cart[existingItemIndex];
                 const newQuantity = existingItem.cantidad + cantidad;
-                
+
                 if (producto.inventario && newQuantity > producto.inventario.cantidad) {
                     return {
                         success: false,
-                        message: `Stock insuficiente. Máximo disponible: ${producto.inventario.cantidad}`
+                        message: `Stock insuficiente. Máximo disponible: ${producto.inventario.cantidad}`,
+                        errorType: 'STOCK_INSUFFICIENT'
                     };
                 }
 
@@ -119,7 +142,8 @@ class CartService {
                 if (producto.inventario && cantidad > producto.inventario.cantidad) {
                     return {
                         success: false,
-                        message: `Stock insuficiente. Máximo disponible: ${producto.inventario.cantidad}`
+                        message: `Stock insuficiente. Máximo disponible: ${producto.inventario.cantidad}`,
+                        errorType: 'STOCK_INSUFFICIENT'
                     };
                 }
 
@@ -136,12 +160,13 @@ class CartService {
             return {
                 success: true,
                 message: 'Producto agregado al carrito',
-                data: cart.find(item => item.producto.id === producto.id)
+                data: cart.find((item) => item.producto.id === producto.id)
             };
         } catch (error) {
             return {
                 success: false,
-                message: 'Error al agregar al carrito'
+                message: 'Error al agregar al carrito',
+                errorType: 'OTHER'
             };
         }
     }
@@ -149,9 +174,9 @@ class CartService {
     removeFromCart(itemId: string): ApiResponse<void> {
         try {
             const cart = this.getCart();
-            const updatedCart = cart.filter(item => item.id !== itemId);
+            const updatedCart = cart.filter((item) => item.id !== itemId);
             this.saveCart(updatedCart);
-            
+
             return {
                 success: true,
                 message: 'Producto removido del carrito'
@@ -174,8 +199,8 @@ class CartService {
             }
 
             const cart = this.getCart();
-            const itemIndex = cart.findIndex(item => item.id === itemId);
-            
+            const itemIndex = cart.findIndex((item) => item.id === itemId);
+
             if (itemIndex === -1) {
                 return {
                     success: false,
@@ -192,7 +217,7 @@ class CartService {
             }
 
             const item = cart[itemIndex];
-            
+
             if (item.producto.inventario && newQuantity > item.producto.inventario.cantidad) {
                 return {
                     success: false,
@@ -202,9 +227,9 @@ class CartService {
 
             cart[itemIndex].cantidad = newQuantity;
             cart[itemIndex].subtotal = newQuantity * item.producto.precio;
-            
+
             this.saveCart(cart);
-            
+
             return {
                 success: true,
                 message: 'Cantidad actualizada',
@@ -256,7 +281,7 @@ class CartService {
 
     async validateCartForCheckout(): Promise<ApiResponse<boolean>> {
         const cart = this.getCart();
-        
+
         if (cart.length === 0) {
             return {
                 success: false,
@@ -284,7 +309,7 @@ class CartService {
         try {
             console.log('🛒 Procesando checkout...');
             console.log('💳 Método de pago:', metodoPago);
-            
+
             const cart = this.getCart();
             if (cart.length === 0) {
                 return {
@@ -302,7 +327,7 @@ class CartService {
 
             // Obtener datos del cliente del localStorage si no se proporcionan
             const clienteData = datosCliente || clientesService.obtenerDatosClienteLocal();
-            
+
             if (!clienteData) {
                 return {
                     success: false,
@@ -314,7 +339,7 @@ class CartService {
 
             // Usar el método mejorado de buscar o crear cliente
             const clienteResult = await clientesService.buscarOCrearCliente(clienteData);
-            
+
             if (!clienteResult.success || !clienteResult.data) {
                 throw new Error(clienteResult.message || 'Error procesando datos del cliente');
             }
@@ -329,7 +354,7 @@ class CartService {
             const checkoutData = {
                 clienteId: clienteId,
                 emprendedorId: emprendedorId,
-                items: cart.map(item => ({
+                items: cart.map((item) => ({
                     productoId: item.producto.id,
                     cantidad: item.cantidad,
                     nombreProducto: item.producto.nombre,
@@ -343,16 +368,16 @@ class CartService {
 
             // Crear la venta con timeout
             console.log('🌐 Haciendo POST a:', `${this.API_BASE_URL}/api/ventas`);
-            
+
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutos timeout
-            
+
             try {
                 const response = await fetch(`${this.API_BASE_URL}/api/ventas`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
                     },
                     body: JSON.stringify(checkoutData),
                     signal: controller.signal
@@ -375,7 +400,7 @@ class CartService {
                 sessionStorage.setItem('currentVentaId', ventaCreada.id?.toString() || '');
 
                 // NO limpiar carrito aquí - se limpiará después del pago exitoso
-                
+
                 return {
                     success: true,
                     message: 'Orden creada exitosamente',
@@ -393,7 +418,6 @@ class CartService {
                 }
                 throw fetchError;
             }
-
         } catch (error: any) {
             console.error('❌ Error en checkout:', error);
             return {
@@ -406,11 +430,11 @@ class CartService {
     async completarVenta(numeroFactura: string): Promise<ApiResponse<any>> {
         try {
             console.log('🏁 Completando venta:', numeroFactura);
-            
+
             // Primero obtener el ID de la venta por número de factura
             const ventaResponse = await fetch(`${this.API_BASE_URL}/api/ventas/factura/${numeroFactura}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
             });
 
@@ -435,7 +459,7 @@ class CartService {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
                     },
                     signal: controller.signal
                 });
@@ -445,10 +469,10 @@ class CartService {
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.warn('⚠️ Error completando venta pero pago exitoso:', errorText);
-                    
+
                     // No fallar el proceso, la venta ya se creó
                     this.clearCart(); // Limpiar carrito de todas formas
-                    
+
                     return {
                         success: true,
                         message: 'Venta creada exitosamente (estado pendiente)',
@@ -458,41 +482,39 @@ class CartService {
 
                 const ventaCompletada = await response.json();
                 console.log('✅ Venta completada:', ventaCompletada);
-                
+
                 // Limpiar carrito solo si todo fue exitoso
                 this.clearCart();
-                
+
                 return {
                     success: true,
                     message: 'Venta completada exitosamente',
                     data: ventaCompletada
                 };
-
             } catch (fetchError: any) {
                 clearTimeout(timeoutId);
-                
+
                 if (fetchError.name === 'AbortError') {
                     console.warn('⚠️ Timeout completando venta, pero pago fue exitoso');
                 } else {
                     console.warn('⚠️ Error de red completando venta:', fetchError);
                 }
-                
+
                 // Limpiar carrito de todas formas, la venta ya se creó
                 this.clearCart();
-                
+
                 return {
                     success: true,
                     message: 'Venta procesada exitosamente (verificación pendiente)',
                     data: venta
                 };
             }
-
         } catch (error: any) {
             console.error('❌ Error completando venta:', error);
-            
+
             // Si hay error, aún así limpiar el carrito porque el pago fue exitoso
             this.clearCart();
-            
+
             return {
                 success: true, // Cambiar a true porque el pago fue exitoso
                 message: 'Pago procesado exitosamente (verificación pendiente)',
@@ -521,11 +543,11 @@ class CartService {
     }
 
     isInCart(productoId: number): boolean {
-        return this.getCart().some(item => item.producto.id === productoId);
+        return this.getCart().some((item) => item.producto.id === productoId);
     }
 
     getItemQuantity(productoId: number): number {
-        const item = this.getCart().find(item => item.producto.id === productoId);
+        const item = this.getCart().find((item) => item.producto.id === productoId);
         return item ? item.cantidad : 0;
     }
 

@@ -93,30 +93,60 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
             return;
         }
 
-        const existingScript = document.getElementById('payphone-script');
+        const scriptId = 'payphone-script';
+        const expectedSrc = `https://pay.payphonetodoesposible.com/api/button/js?appId=${payphoneAppId}`;
+        const existingScript = document.getElementById(scriptId) as HTMLScriptElement;
+
+        // Si el script ya existe, verificar si es el mismo App ID
         if (existingScript) {
-            if (window.payphone) {
-                setScriptLoaded(true);
+            if (existingScript.src === expectedSrc) {
+                console.log('[Payphone] El script ya existe con el App ID correcto.');
+                if (window.payphone && typeof window.payphone.Button === 'function') {
+                    setScriptLoaded(true);
+                } else {
+                    // Reintentar un poco más si el objeto no está listo
+                    const checkInterval = setInterval(() => {
+                        if (window.payphone && typeof window.payphone.Button === 'function') {
+                            setScriptLoaded(true);
+                            clearInterval(checkInterval);
+                        }
+                    }, 200);
+                    setTimeout(() => clearInterval(checkInterval), 3000);
+                    return () => clearInterval(checkInterval);
+                }
+                return;
             } else {
-                const timer = setTimeout(() => setScriptLoaded(true), 500);
-                return () => clearTimeout(timer);
+                // App ID diferente: Eliminar script viejo y limpiar objeto global para recargar
+                console.log('[Payphone] App ID cambió. Recargando SDK...');
+                existingScript.remove();
+                if (window.payphone) delete (window as any).payphone;
+                setScriptLoaded(false);
+                setButtonRendered(false);
+                renderAttempted.current = false;
             }
-            return;
         }
 
-        // ⚠️ CRÍTICO: NO usar type="module". Los scripts tipo "module" tienen
-        // scope propio y NO exponen window.payphone globalmente.
+        // Crear nuevo script
         const script = document.createElement('script');
-        script.id = 'payphone-script';
-        script.src = `https://pay.payphonetodoesposible.com/api/button/js?appId=${payphoneAppId}`;
-        // NO se pone script.type = 'module' — eso rompe el scope global
+        script.id = scriptId;
+        script.src = expectedSrc;
+        script.async = true;
 
         script.onload = () => {
-            // Dar margen para que el SDK inicialice window.payphone
-            setTimeout(() => {
-                console.log('[Payphone] Script cargado. window.payphone disponible:', !!window.payphone);
-                setScriptLoaded(true);
-            }, 300);
+            // Dar margen para que el SDK inicialice window.payphone.Button
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (window.payphone && typeof window.payphone.Button === 'function') {
+                    console.log('[Payphone] SDK inicializado correctamente después de', attempts, 'intentos');
+                    setScriptLoaded(true);
+                    clearInterval(checkInterval);
+                } else if (attempts > 20) { // 4 segundos max
+                    console.error('[Payphone] El SDK cargó pero window.payphone.Button no está disponible.');
+                    setErrorMsg('Error al inicializar el SDK de Payphone (Button no encontrado).');
+                    clearInterval(checkInterval);
+                }
+            }, 200);
         };
 
         script.onerror = () => {

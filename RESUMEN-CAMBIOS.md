@@ -783,9 +783,55 @@ Para asegurar que los cambios sean persistentes si se borran los volúmenes de D
 
 ---
 
-## Estado Final del Sistema
-- ✅ **Multi-Vendedor:** Cada emprendedor configura sus propios tokens en su panel.
-- ✅ **Seguridad:** Tokens privados nunca viajan al navegador del cliente.
-- ✅ **Persistencia:** Las ventas se registran correctamente asociadas al emprendedor real.
-- ✅ **Robustez:** El sistema sobrevive a reinicios de servidor gracias a JWT con HMAC-SHA256.
+## SESIÓN 10 — Restricción de Carrito Multi-Vendedor y Estabilización de Payphone
+
+### Cambio 31 — Lógica de Negocio: Restricción de Carrito a un Solo Vendedor
+
+**Problema:** El sistema permitía mezclar productos de diferentes emprendedores en el mismo carrito. Esto causaba conflictos en el flujo de pago y en la liquidación de fondos, ya que la pasarela se inicializa con las credenciales de un único vendedor.
+
+**Archivo modificado:**
+- `avalon-react-10.1.0\services\cartService.ts`
+
+**Qué se cambió:**
+- Se actualizó el método `addToCart` para validar el `empresa.id` del nuevo producto contra los productos ya existentes en el carrito.
+- Si hay un conflicto de vendedor, el servicio devuelve un error de tipo `VENDOR_MISMATCH`.
+- Se añadió un parámetro `clearConflict` para permitir vaciar el carrito y empezar uno nuevo con el nuevo vendedor de forma atómica.
+
+### Cambio 32 — Frontend: Diálogos de Confirmación para Conflictos de Vendedor
+
+**Archivos modificados:**
+- `avalon-react-10.1.0\app\(main)\products\page.tsx`
+- `avalon-react-10.1.0\app\(landing)\products\page.tsx`
+- `avalon-react-10.1.0\app\(main)\components\FeaturedProducts.tsx`
+- `avalon-react-10.1.0\app\(landing)\components\FeaturedProducts.tsx`
+
+**Qué se cambió:**
+- Se integró `ConfirmDialog` de PrimeReact en todos los puntos de entrada al carrito.
+- Cuando el usuario intenta agregar un producto de una empresa diferente, aparece un modal informativo que ofrece dos opciones:
+  1. **Mantener carrito actual:** Cancela la acción.
+  2. **Vaciar y añadir nuevo:** Limpia el carrito anterior y añade el producto del nuevo vendedor automáticamente.
+
+### Cambio 33 — Fix Crítico: Inicialización del SDK de Payphone (`window.payphone.Button`)
+
+**Problema:** Tras los cambios en la navegación y el carrito, apareció el error `TypeError: window.payphone.Button is not a function`. Esto ocurría por una carrera de parámetros (race condition) donde el componente intentaba usar el SDK antes de que este terminara de inyectar sus funciones globales, o reutilizaba un script con un `appId` incorrecto tras un cambio de vendedor.
+
+**Archivo modificado:**
+- `avalon-react-10.1.0\app\(main)\checkout\components\PayphoneForm.tsx`
+
+**Qué se cambió:**
+- **Sincronización Robusta:** Se implementó un sistema de "polling" (reintentos) que espera específicamente a que la función `Button` esté definida en el objeto global antes de permitir el renderizado.
+- **Limpieza de Scripts:** Si el `appId` cambia (por cambio de vendedor), el componente ahora elimina el script anterior y limpia el objeto `window.payphone` para asegurar una carga limpia y válida.
+- **Atributos de Script:** Se añadió `async = true` y se eliminó cualquier dependencia de `type="module"` para garantizar la exposición global del SDK.
+
+### Efecto Final
+- ✅ **UX Mejorada:** El usuario recibe feedback claro cuando intenta mezclar vendedores y puede resolver el conflicto con un solo clic.
+- ✅ **Estabilidad de Pago:** Se eliminaron los errores de carga del SDK de Payphone, garantizando que el botón de pago siempre aparezca con las credenciales correctas.
+- ✅ **Integridad de Datos:** Al restringir a un solo vendedor, se asegura que las transacciones y comisiones se procesen correctamente en el backend.
+
+---
+
+## Estado Final del Sistema (Post-Sesión 10)
+- **Carrito:** Validado para un solo emprendedor por pedido.
+- **Pasarela:** Payphone dinámico y robusto ante cambios de navegación.
+- **UI:** Integración completa con diálogos de confirmación Premium.
 
