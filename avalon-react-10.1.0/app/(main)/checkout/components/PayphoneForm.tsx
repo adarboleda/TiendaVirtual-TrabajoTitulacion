@@ -45,7 +45,8 @@ const PayphoneForm: React.FC<PayphoneFormProps> = ({
                 const emprendedorId = cartItems.length > 0 ? cartItems[0].producto?.empresa?.id : null;
                 
                 if (emprendedorId) {
-                    const res = await fetch(`http://127.0.0.1:8084/api/emprendedor/configuracion-pagos/payphone/${emprendedorId}`);
+                    const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
+                    const res = await fetch(`${apiBase}/api/emprendedor/configuracion-pagos/payphone/${emprendedorId}`);
                     if (res.ok) {
 
                         const data = await res.json();

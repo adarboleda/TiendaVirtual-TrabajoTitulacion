@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"})
+@CrossOrigin(originPatterns = "*")
 @RequestMapping("/api/inventarios")
 @Tag(name = "Inventarios", description = "API para gestionar inventarios")
 public class InventarioController {

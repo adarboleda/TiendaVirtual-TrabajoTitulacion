@@ -47,8 +47,10 @@ export interface ApiResponse<T> {
 }
 
 class ProductService {
-    private readonly PRODUCTOS_URL = 'http://localhost:8081/api';
-    private readonly INVENTARIO_URL = 'http://localhost:8082/api/inventarios';
+    private readonly PRODUCTOS_URL = process.env.NEXT_PUBLIC_PRODUCTOS_API_URL || 'http://localhost:8081/api';
+    private readonly INVENTARIO_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL 
+        ? `${process.env.NEXT_PUBLIC_INVENTARIO_API_URL}/api/inventarios` 
+        : 'http://localhost:8082/api/inventarios';
     private cache: Map<string, { data: any; timestamp: number }> = new Map();
     private stockCache: Map<number, number> = new Map(); // Cache específico para stock
     private readonly CACHE_DURATION = 2 * 60 * 1000; // 2 minutos

@@ -85,13 +85,14 @@ export default function HistorialCompras() {
             console.log('👤 Usuario:', user);
             
             // Intentar obtener el cliente por email, si falla intentar por username
+            const apiBase = process.env.NEXT_PUBLIC_VENTAS_API_URL || 'http://localhost:8083';
             console.log('🔍 Buscando cliente por email:', user.email || user.username);
-            let clienteResponse = await fetch(`http://localhost:8083/api/clientes/email/${encodeURIComponent(user.email || user.username)}`);
+            let clienteResponse = await fetch(`${apiBase}/api/clientes/email/${encodeURIComponent(user.email || user.username)}`);
             
             if (!clienteResponse.ok && user.username) {
                 console.log('⚠️ Email no encontrado, intentando con username:', user.username);
                 // Si falla con email, intentar con username (puede ser el email alternativo)
-                clienteResponse = await fetch(`http://localhost:8083/api/clientes/email/${encodeURIComponent(user.username)}`);
+                clienteResponse = await fetch(`${apiBase}/api/clientes/email/${encodeURIComponent(user.username)}`);
             }
             
             if (!clienteResponse.ok) {
@@ -106,7 +107,7 @@ export default function HistorialCompras() {
             
             // Obtener las ventas del cliente
             console.log('🔍 Obteniendo ventas para cliente ID:', cliente.id);
-            const response = await fetch(`http://localhost:8083/api/ventas/cliente/${cliente.id}`);
+            const response = await fetch(`${apiBase}/api/ventas/cliente/${cliente.id}`);
             
             if (response.ok) {
                 const data = await response.json();

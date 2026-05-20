@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"})
+@CrossOrigin(originPatterns = "*")
 @RequestMapping("/api/seguimiento-logistica")
 @RequiredArgsConstructor
 @Slf4j

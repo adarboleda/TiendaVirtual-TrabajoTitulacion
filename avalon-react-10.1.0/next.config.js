@@ -69,7 +69,7 @@ const nextConfig = {
     unoptimized: true // ✅ Para evitar errores de optimización
   },
   
-  // ✅ Configuración para archivos estáticos
+  // ✅ Configuración para archivos estáticos y API reverse proxy
   async rewrites() {
     return [
       {
@@ -83,6 +83,34 @@ const nextConfig = {
       {
         source: '/logo-white.svg',
         destination: '/layout/images/logo-white.svg'
+      },
+      {
+        source: '/api/proxy/productos/productos/:path*',
+        destination: 'http://localhost:8081/api/productos/:path*'
+      },
+      {
+        source: '/api/proxy/productos/categorias/:path*',
+        destination: 'http://localhost:8081/api/categorias/:path*'
+      },
+      {
+        source: '/api/proxy/productos/empresas/:path*',
+        destination: 'http://localhost:8081/api/empresas/:path*'
+      },
+      {
+        source: '/api/proxy/productos/:path*',
+        destination: 'http://localhost:8081/:path*'
+      },
+      {
+        source: '/api/proxy/inventarios/:path*',
+        destination: 'http://localhost:8082/:path*'
+      },
+      {
+        source: '/api/proxy/ventas/:path*',
+        destination: 'http://localhost:8083/:path*'
+      },
+      {
+        source: '/api/proxy/auth/:path*',
+        destination: 'http://localhost:8084/:path*'
       }
     ];
   },

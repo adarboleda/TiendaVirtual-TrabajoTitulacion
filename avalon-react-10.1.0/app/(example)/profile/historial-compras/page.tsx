@@ -57,7 +57,8 @@ export default function HistorialCompras() {
             // Obtener el ID del cliente desde el localStorage o contexto de autenticación
             const clienteId = obtenerClienteId();
             
-            const response = await fetch(`http://localhost:8083/api/ventas/cliente/${clienteId}`);
+            const apiBase = process.env.NEXT_PUBLIC_VENTAS_API_URL || 'http://localhost:8083';
+            const response = await fetch(`${apiBase}/api/ventas/cliente/${clienteId}`);
             
             if (response.ok) {
                 const data = await response.json();

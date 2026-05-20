@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"})
+@CrossOrigin(originPatterns = "*")
 @Tag(name = "Gestión de Usuarios", description = "API para gestión de usuarios por administradores")
 public class AuthController {
 

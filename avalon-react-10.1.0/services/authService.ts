@@ -40,7 +40,9 @@ interface UsuarioInfo {
 class AuthService {
     private readonly TOKEN_KEY = 'auth_token';
     private readonly USER_KEY = 'user_info';
-    private readonly API_URL = 'http://localhost:8084/api/auth';
+    private readonly API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL 
+        ? `${process.env.NEXT_PUBLIC_AUTH_API_URL}/api/auth` 
+        : 'http://localhost:8084/api/auth';
 
     async login(username: string, password: string): Promise<LoginResponse> {
         try {
@@ -111,7 +113,7 @@ class AuthService {
             console.error('🚨 Error de conexión:', error);
             return {
                 success: false,
-                message: 'Error de conexión. Verifica que el microservicio esté corriendo en http://localhost:8084'
+                message: 'Error de conexión. No se pudo establecer contacto con el servicio de autenticación.'
             };
         }
     }

@@ -83,7 +83,8 @@ export default function ConfiguracionMetodosPago() {
         setLoadingData(true);
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos', {
+            const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
+            const response = await fetch(`${apiBase}/api/emprendedor/configuracion-pagos`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {
@@ -166,7 +167,8 @@ export default function ConfiguracionMetodosPago() {
         setLoading(true);
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/bancarios', {
+            const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
+            const response = await fetch(`${apiBase}/api/emprendedor/configuracion-pagos/bancarios`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -238,7 +240,8 @@ export default function ConfiguracionMetodosPago() {
 
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/deuna-qr', {
+            const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
+            const response = await fetch(`${apiBase}/api/emprendedor/configuracion-pagos/deuna-qr`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
@@ -275,7 +278,8 @@ export default function ConfiguracionMetodosPago() {
         setLoading(true);
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/deuna-qr', {
+            const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
+            const response = await fetch(`${apiBase}/api/emprendedor/configuracion-pagos/deuna-qr`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -315,7 +319,8 @@ export default function ConfiguracionMetodosPago() {
         setLoading(true);
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('http://localhost:8084/api/emprendedor/configuracion-pagos/payphone', {
+            const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
+            const response = await fetch(`${apiBase}/api/emprendedor/configuracion-pagos/payphone`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import org.slf4j.LoggerFactory;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(originPatterns = "*")
 @RequestMapping("/api/productos")
 @Tag(name = "Productos", description = "API para gestionar productos")
 public class ProductoController {

@@ -78,9 +78,13 @@ export interface ApiResponse<T> {
 
 // ================ SERVICIO PRINCIPAL ================
 class EmprendedorService {
-    private readonly PRODUCTOS_URL = 'http://localhost:8081/api';
-    private readonly INVENTARIO_URL = 'http://localhost:8082/api';
-    private readonly VENTAS_URL = 'http://localhost:8083/api';
+    private readonly PRODUCTOS_URL = process.env.NEXT_PUBLIC_PRODUCTOS_API_URL || 'http://localhost:8081/api';
+    private readonly INVENTARIO_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL 
+        ? `${process.env.NEXT_PUBLIC_INVENTARIO_API_URL}/api` 
+        : 'http://localhost:8082/api';
+    private readonly VENTAS_URL = process.env.NEXT_PUBLIC_VENTAS_API_URL 
+        ? `${process.env.NEXT_PUBLIC_VENTAS_API_URL}/api` 
+        : 'http://localhost:8083/api';
 
     /**
      * ✅ ACTUALIZAR STOCK EN SEGUNDO PLANO - VERSIÓN BATCH OPTIMIZADA
