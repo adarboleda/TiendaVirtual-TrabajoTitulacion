@@ -30,6 +30,7 @@ public class ProductoEntityMapper {
         entity.setActivo(domain.getActivo());
         entity.setFechaCreacion(domain.getFechaCreacion());
         entity.setFechaActualizacion(domain.getFechaActualizacion());
+        entity.setEmprendedorId(domain.getEmprendedorId());
 
         if (domain.getEmpresa() != null) {
             entity.setEmpresa(empresaEntityMapper.toEntity(domain.getEmpresa()));
@@ -56,6 +57,7 @@ public class ProductoEntityMapper {
         domain.setActivo(entity.getActivo());
         domain.setFechaCreacion(entity.getFechaCreacion());
         domain.setFechaActualizacion(entity.getFechaActualizacion());
+        domain.setEmprendedorId(entity.getEmprendedorId());
 
         if (entity.getEmpresa() != null) {
             domain.setEmpresa(empresaEntityMapper.toDomain(entity.getEmpresa()));

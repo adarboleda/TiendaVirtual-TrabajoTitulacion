@@ -72,29 +72,28 @@ export interface ApiResponse<T> {
 }
 
 class InventarioService {
-    
     // =====================================
     // MÉTODOS AUXILIARES
     // =====================================
-    
+
     private async makeRequest<T>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
         try {
             const token = localStorage.getItem('token');
-            
+
             const response = await fetch(`${API_BASE_URL}${url}`, {
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : '',
-                    ...options.headers,
+                    Authorization: token ? `Bearer ${token}` : '',
+                    ...options.headers
                 },
-                ...options,
+                ...options
             });
 
             if (!response.ok) {
                 const errorData = await response.text();
                 return {
                     success: false,
-                    message: `Error ${response.status}: ${errorData || 'Error desconocido'}`,
+                    message: `Error ${response.status}: ${errorData || 'Error desconocido'}`
                 };
             }
 
@@ -102,7 +101,7 @@ class InventarioService {
             if (response.status === 204) {
                 return {
                     success: true,
-                    message: 'Operación exitosa',
+                    message: 'Operación exitosa'
                 };
             }
 
@@ -110,13 +109,13 @@ class InventarioService {
             return {
                 success: true,
                 message: 'Operación exitosa',
-                data,
+                data
             };
         } catch (error) {
             console.error('Error en la petición:', error);
             return {
                 success: false,
-                message: 'Error de conexión con el servidor',
+                message: 'Error de conexión con el servidor'
             };
         }
     }
@@ -127,7 +126,7 @@ class InventarioService {
             if (!fecha) return 'Fecha no disponible';
             const date = new Date(fecha);
             if (isNaN(date.getTime())) return 'Fecha inválida';
-            
+
             return date.toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'short',
@@ -144,11 +143,11 @@ class InventarioService {
     // Formatear tipo de movimiento
     formatearTipoMovimiento(tipo: string): string {
         const tipos: Record<string, string> = {
-            'ENTRADA': 'Entrada',
-            'SALIDA': 'Salida',
-            'AJUSTE': 'Ajuste',
-            'DEVOLUCION': 'Devolución',
-            'TRANSFERENCIA': 'Transferencia'
+            ENTRADA: 'Entrada',
+            SALIDA: 'Salida',
+            AJUSTE: 'Ajuste',
+            DEVOLUCION: 'Devolución',
+            TRANSFERENCIA: 'Transferencia'
         };
         return tipos[tipo] || tipo;
     }
@@ -156,7 +155,7 @@ class InventarioService {
     // =====================================
     // MÉTODOS PARA INVENTARIOS
     // =====================================
-    
+
     async obtenerInventarios(): Promise<ApiResponse<Inventario[]>> {
         return this.makeRequest<Inventario[]>('/api/inventarios');
     }
@@ -172,20 +171,20 @@ class InventarioService {
     async crearInventario(inventario: InventarioRequest): Promise<ApiResponse<Inventario>> {
         return this.makeRequest<Inventario>('/api/inventarios', {
             method: 'POST',
-            body: JSON.stringify(inventario),
+            body: JSON.stringify(inventario)
         });
     }
 
     async crearInventarioParaProducto(productoId: number, stock: number): Promise<ApiResponse<Inventario>> {
         return this.makeRequest<Inventario>(`/api/inventarios/producto/${productoId}?stock=${stock}`, {
-            method: 'POST',
+            method: 'POST'
         });
     }
 
     async actualizarInventario(id: number, inventario: InventarioRequest): Promise<ApiResponse<Inventario>> {
         return this.makeRequest<Inventario>(`/api/inventarios/${id}`, {
             method: 'PUT',
-            body: JSON.stringify(inventario),
+            body: JSON.stringify(inventario)
         });
     }
 
@@ -196,25 +195,30 @@ class InventarioService {
             ...(motivo && { motivo })
         });
 
-        return this.makeRequest<Inventario>(`/api/inventarios/producto/${productoId}/stock?${params}`, {
-            method: 'PUT',
+        const response = await this.makeRequest<Inventario>(`/api/inventarios/producto/${productoId}/stock?${params}`, {
+            method: 'PUT'
         });
+
+        if (!response.success && response.message.includes('Inventario no encontrado')) {
+            return this.crearInventario({ productoId, cantidad });
+        }
+
+        return response;
     }
 
     async eliminarInventario(id: number): Promise<ApiResponse<void>> {
         return this.makeRequest<void>(`/api/inventarios/${id}`, {
-            method: 'DELETE',
+            method: 'DELETE'
         });
     }
 
     async procesarSalidaLote(salida: SalidaInventarioLote): Promise<ApiResponse<Inventario[]>> {
         return this.makeRequest<Inventario[]>('/api/inventarios/salida-lote', {
             method: 'POST',
-            body: JSON.stringify(salida),
+            body: JSON.stringify(salida)
         });
     }
 
-    
     /**
      * Obtener stock de un producto específico
      * Endpoint simple que devuelve solo el número
@@ -236,12 +240,12 @@ class InventarioService {
     async obtenerStockBatch(productosIds: number[]): Promise<Record<string, number>> {
         try {
             console.log(`🔄 Obteniendo stock batch para ${productosIds.length} productos...`);
-            
+
             const response = await this.makeRequest<Record<string, number>>('/api/inventarios/cantidad/batch', {
                 method: 'POST',
-                body: JSON.stringify(productosIds),
+                body: JSON.stringify(productosIds)
             });
-            
+
             if (response.success && response.data) {
                 console.log('✅ Stock batch obtenido exitosamente');
                 return response.data;
@@ -253,7 +257,7 @@ class InventarioService {
             console.error('❌ Error obteniendo stock batch:', error);
             // Devolver un objeto con todos los productos en 0
             const errorResult: Record<string, number> = {};
-            productosIds.forEach(id => {
+            productosIds.forEach((id) => {
                 errorResult[id.toString()] = 0;
             });
             return errorResult;
@@ -263,7 +267,7 @@ class InventarioService {
     // =====================================
     // MÉTODOS PARA MOVIMIENTOS
     // =====================================
-    
+
     async obtenerMovimientos(): Promise<ApiResponse<MovimientoInventario[]>> {
         return this.makeRequest<MovimientoInventario[]>('/api/movimientos');
     }
@@ -279,7 +283,7 @@ class InventarioService {
     async registrarMovimiento(movimiento: MovimientoRequest): Promise<ApiResponse<MovimientoInventario>> {
         return this.makeRequest<MovimientoInventario>('/api/movimientos', {
             method: 'POST',
-            body: JSON.stringify(movimiento),
+            body: JSON.stringify(movimiento)
         });
     }
 }

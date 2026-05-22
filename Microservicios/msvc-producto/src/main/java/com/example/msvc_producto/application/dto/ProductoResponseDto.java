@@ -15,6 +15,7 @@ public class ProductoResponseDto {
     private EmpresaResponseDto empresa;
     private CategoriaResponseDto categoria;
     private InventarioInfoDto inventario; // Información básica del inventario
+    private Long emprendedorId;
 
     // Constructor vacío
     public ProductoResponseDto() {
@@ -107,6 +108,14 @@ public class ProductoResponseDto {
 
     public void setInventario(InventarioInfoDto inventario) {
         this.inventario = inventario;
+    }
+
+    public Long getEmprendedorId() {
+        return emprendedorId;
+    }
+
+    public void setEmprendedorId(Long emprendedorId) {
+        this.emprendedorId = emprendedorId;
     }
 
 }

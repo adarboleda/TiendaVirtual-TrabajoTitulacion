@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
 import java.util.Optional;
 
 @Service
@@ -42,10 +43,10 @@ public class InventarioServiceImpl implements InventarioService {
         try {
             ProductoDto producto = productoClient.obtenerProducto(inventario.getProductoId());
             if (producto == null) {
-                throw new IllegalArgumentException("El producto no existe");
+                System.out.println("Producto no encontrado en msvc-producto, creando inventario de todas formas");
             }
         } catch (FeignException e) {
-            throw new IllegalArgumentException("Error al verificar el producto: " + e.getMessage());
+            System.out.println("Error al verificar el producto, creando inventario de todas formas: " + e.getMessage());
         }
 
         // Verificar si ya existe un inventario para este producto
@@ -84,13 +85,14 @@ public class InventarioServiceImpl implements InventarioService {
         inventario.setActivo(inventarioActualizado.getActivo());
         inventario.setFechaActualizacion(LocalDateTime.now());
 
-        // Actualizar también el stock en el microservicio de productos
-        try {
-            productoClient.actualizarStockProducto(inventario.getProductoId(), inventario.getCantidad());
-        } catch (FeignException e) {
-            // Loguear el error pero continuar con la actualización
-            System.out.println("Error al actualizar stock en productos: " + e.getMessage());
-        }
+        // Actualizar también el stock en el microservicio de productos (no bloqueante)
+        CompletableFuture.runAsync(() -> {
+            try {
+                productoClient.actualizarStockProducto(inventario.getProductoId(), inventario.getCantidad());
+            } catch (FeignException e) {
+                System.out.println("Error al actualizar stock en productos: " + e.getMessage());
+            }
+        });
 
         return inventarioRepository.save(inventario);
     }
@@ -125,7 +127,12 @@ public class InventarioServiceImpl implements InventarioService {
     @Transactional
     public Inventario actualizarStock(Long productoId, Integer cantidad, String tipoMovimientoStr, String motivo) {
         Inventario inventario = obtenerPorProductoId(productoId);
-        MovimientoInventario.TipoMovimiento tipoMovimiento = MovimientoInventario.TipoMovimiento.valueOf(tipoMovimientoStr);
+        MovimientoInventario.TipoMovimiento tipoMovimiento;
+        try {
+            tipoMovimiento = MovimientoInventario.TipoMovimiento.valueOf(tipoMovimientoStr);
+        } catch (IllegalArgumentException e) {
+            tipoMovimiento = MovimientoInventario.TipoMovimiento.AJUSTE;
+        }
 
         int nuevaCantidad = calcularNuevaCantidad(inventario.getCantidad(), cantidad, tipoMovimiento);
 
@@ -144,13 +151,14 @@ public class InventarioServiceImpl implements InventarioService {
         inventario.setCantidad(nuevaCantidad);
         inventario.setFechaActualizacion(LocalDateTime.now());
 
-        // Actualizar también el stock en el microservicio de productos
-        try {
-            productoClient.actualizarStockProducto(inventario.getProductoId(), nuevaCantidad);
-        } catch (FeignException e) {
-            // Loguear el error pero continuar con la actualización
-            System.out.println("Error al actualizar stock en productos: " + e.getMessage());
-        }
+        // Actualizar también el stock en el microservicio de productos (no bloqueante)
+        CompletableFuture.runAsync(() -> {
+            try {
+                productoClient.actualizarStockProducto(inventario.getProductoId(), nuevaCantidad);
+            } catch (FeignException e) {
+                System.out.println("Error al actualizar stock en productos: " + e.getMessage());
+            }
+        });
 
         return inventarioRepository.save(inventario);
     }

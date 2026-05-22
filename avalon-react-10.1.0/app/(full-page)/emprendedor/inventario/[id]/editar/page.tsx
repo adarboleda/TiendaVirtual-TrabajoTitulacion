@@ -27,24 +27,14 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [producto, setProducto] = useState<ProductoEmprendedor | null>(null);
-    
+
     // Estados del formulario
     const [cantidad, setCantidad] = useState<number>(0);
     const [ubicacion, setUbicacion] = useState<string>('');
     const [stockAnterior, setStockAnterior] = useState<number>(0);
 
     // Opciones comunes de ubicación para sugerencias (pero el campo será libre)
-    const ubicacionesSugeridas = [
-        'Almacén Principal',
-        'Bodega A', 
-        'Bodega B',
-        'Estantería 1',
-        'Estantería 2', 
-        'Área de Exhibición',
-        'Zona de Despacho',
-        'Disponible',
-        'Reservado'
-    ];
+    const ubicacionesSugeridas = ['Almacén Principal', 'Bodega A', 'Bodega B', 'Estantería 1', 'Estantería 2', 'Área de Exhibición', 'Zona de Despacho', 'Disponible', 'Reservado'];
 
     useEffect(() => {
         cargarDatos();
@@ -54,35 +44,34 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
         setLoading(true);
         try {
             console.log('🔄 Cargando datos para editar inventario del producto:', productoId);
-            
+
             // ✅ PRIMERO: Obtener el producto básico
             const productosRes = await emprendedorService.obtenerProductosEmprendedor();
-            
+
             if (productosRes.success && productosRes.data) {
                 // Buscar el producto específico
-                const productoEncontrado = productosRes.data.find(p => p.id === productoId);
-                
+                const productoEncontrado = productosRes.data.find((p) => p.id === productoId);
+
                 if (productoEncontrado) {
                     setProducto(productoEncontrado);
-                    
+
                     // ✅ SEGUNDO: Obtener el stock REAL directamente del inventario
                     console.log('🔍 Obteniendo stock real del inventario...');
-                    
+
                     try {
                         // Usar el método individual para obtener el stock más actualizado
                         const stockReal = await inventarioService.obtenerStockProducto(productoId);
-                        
+
                         console.log(`✅ Stock real obtenido: ${stockReal}`);
-                        
+
                         // Actualizar los estados con el stock real
                         setCantidad(stockReal);
                         setStockAnterior(stockReal);
-                        
+
                         // También actualizar el producto en memoria
                         if (productoEncontrado.inventario) {
                             productoEncontrado.inventario.cantidad = stockReal;
                         }
-                        
                     } catch (error) {
                         console.log('⚠️ Error obteniendo stock real, usando valor del producto:', error);
                         // Si falla, usar el valor que viene del producto
@@ -90,11 +79,11 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                         setCantidad(stockFallback);
                         setStockAnterior(stockFallback);
                     }
-                    
+
                     // Establecer ubicación
                     const ubicacionActual = productoEncontrado.inventario?.ubicacion || 'Disponible';
                     setUbicacion(ubicacionActual);
-                    
+
                     console.log('✅ Datos finales cargados:', {
                         id: productoEncontrado.id,
                         nombre: productoEncontrado.nombre,
@@ -107,7 +96,6 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
             } else {
                 throw new Error('Error cargando lista de productos');
             }
-
         } catch (error) {
             console.error('❌ Error cargando datos:', error);
             toast.current?.show({
@@ -137,12 +125,7 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
             });
 
             // ✅ USAR EL SERVICIO DE INVENTARIO para actualizar stock
-            const response = await inventarioService.actualizarStock(
-                productoId,
-                cantidad,
-                'AJUSTE',
-                `Ajuste manual: ${stockAnterior} → ${cantidad} unidades`
-            );
+            const response = await inventarioService.actualizarStock(productoId, cantidad, 'AJUSTE', `Ajuste manual: ${stockAnterior} -> ${cantidad} unidades`);
 
             if (response.success) {
                 toast.current?.show({
@@ -153,20 +136,22 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                 });
 
                 // ✅ DISPARAR EVENTO PARA ACTUALIZAR OTROS COMPONENTES
-                window.dispatchEvent(new CustomEvent('stockUpdatedEmprendedor', {
-                    detail: { 
-                        productoId, 
-                        stock: cantidad, 
-                        producto: {
-                            ...producto,
-                            inventario: {
-                                ...producto.inventario,
-                                cantidad: cantidad,
-                                ubicacion: ubicacion
+                window.dispatchEvent(
+                    new CustomEvent('stockUpdatedEmprendedor', {
+                        detail: {
+                            productoId,
+                            stock: cantidad,
+                            producto: {
+                                ...producto,
+                                inventario: {
+                                    ...producto.inventario,
+                                    cantidad: cantidad,
+                                    ubicacion: ubicacion
+                                }
                             }
                         }
-                    }
-                }));
+                    })
+                );
 
                 // Navegar de vuelta
                 setTimeout(() => {
@@ -214,11 +199,7 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                     <i className="pi pi-exclamation-triangle text-4xl text-orange-500 mb-3"></i>
                     <h3>Producto no encontrado</h3>
                     <p className="text-600 mb-3">No se pudo cargar la información del producto.</p>
-                    <Button 
-                        label="Volver" 
-                        icon="pi pi-arrow-left" 
-                        onClick={() => router.push('/emprendedor/inventario')}
-                    />
+                    <Button label="Volver" icon="pi pi-arrow-left" onClick={() => router.push('/emprendedor/inventario')} />
                 </div>
             </Card>
         );
@@ -235,16 +216,9 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                         <i className="pi pi-pencil text-primary mr-3"></i>
                         Editar Inventario
                     </h1>
-                    <p className="text-600 text-lg">
-                        Modifica el stock y ubicación del producto
-                    </p>
+                    <p className="text-600 text-lg">Modifica el stock y ubicación del producto</p>
                 </div>
-                <Button 
-                    label="Volver" 
-                    icon="pi pi-arrow-left" 
-                    className="p-button-outlined"
-                    onClick={() => router.push('/emprendedor/inventario')}
-                />
+                <Button label="Volver" icon="pi pi-arrow-left" className="p-button-outlined" onClick={() => router.push('/emprendedor/inventario')} />
             </div>
 
             <div className="grid">
@@ -252,14 +226,9 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                 <div className="col-12 lg:col-4">
                     <Card title="Información del Producto" className="h-full">
                         <div className="text-center mb-4">
-                            <Image
-                                src={producto.imagen || 'https://via.placeholder.com/200x200?text=Producto'}
-                                alt={producto.nombre}
-                                width="200"
-                                className="border-round shadow-2"
-                            />
+                            <Image src={producto.imagen || '/demo/images/product/product-placeholder.svg'} alt={producto.nombre} width="200" className="border-round shadow-2" />
                         </div>
-                        
+
                         <div className="space-y-3">
                             <div>
                                 <strong>Nombre:</strong>
@@ -275,9 +244,7 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                             </div>
                             <div>
                                 <strong>Precio:</strong>
-                                <div className="mt-1 text-primary font-bold">
-                                    {emprendedorService.formatearPrecio(producto.precio)}
-                                </div>
+                                <div className="mt-1 text-primary font-bold">{emprendedorService.formatearPrecio(producto.precio)}</div>
                             </div>
                         </div>
                     </Card>
@@ -302,11 +269,7 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                             </div>
                             <div className="col-12 md:col-4">
                                 <div className="bg-gray-50 border-round p-3 text-center">
-                                    <Tag 
-                                        value={calcularDiferencia() > 0 ? `+${calcularDiferencia()}` : calcularDiferencia().toString()}
-                                        severity={obtenerSeveridadDiferencia()}
-                                        className="text-base"
-                                    />
+                                    <Tag value={calcularDiferencia() > 0 ? `+${calcularDiferencia()}` : calcularDiferencia().toString()} severity={obtenerSeveridadDiferencia()} className="text-base" />
                                     <div className="text-600 text-sm mt-1">Diferencia</div>
                                 </div>
                             </div>
@@ -320,30 +283,15 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
                                 <label htmlFor="cantidad" className="block text-900 font-medium mb-2">
                                     Nueva Cantidad <span className="text-red-500">*</span>
                                 </label>
-                                <InputNumber
-                                    id="cantidad"
-                                    value={cantidad}
-                                    onValueChange={(e) => setCantidad(e.value || 0)}
-                                    min={0}
-                                    className="w-full"
-                                    placeholder="Ingrese la nueva cantidad"
-                                />
+                                <InputNumber id="cantidad" value={cantidad} onValueChange={(e) => setCantidad(e.value || 0)} min={0} className="w-full" placeholder="Ingrese la nueva cantidad" />
                             </div>
 
                             <div className="col-12 md:col-6">
                                 <label htmlFor="ubicacion" className="block text-900 font-medium mb-2">
                                     Ubicación
                                 </label>
-                                <InputText
-                                    id="ubicacion"
-                                    value={ubicacion}
-                                    onChange={(e) => setUbicacion(e.target.value)}
-                                    placeholder="Ej: Almacén Principal, Bodega A, Estantería 1..."
-                                    className="w-full"
-                                />
-                                <small className="text-600 block mt-1">
-                                    Escribe la ubicación donde se encuentra el producto
-                                </small>
+                                <InputText id="ubicacion" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} placeholder="Ej: Almacén Principal, Bodega A, Estantería 1..." className="w-full" />
+                                <small className="text-600 block mt-1">Escribe la ubicación donde se encuentra el producto</small>
                             </div>
                         </div>
 
@@ -351,20 +299,8 @@ const EditarInventarioPage: React.FC<EditarInventarioPageProps> = ({ params }) =
 
                         {/* Botones de acción */}
                         <div className="flex gap-2 justify-content-end">
-                            <Button 
-                                label="Cancelar" 
-                                icon="pi pi-times" 
-                                className="p-button-outlined"
-                                onClick={() => router.push('/emprendedor/inventario')}
-                                disabled={saving}
-                            />
-                            <Button 
-                                label={saving ? 'Guardando...' : 'Guardar Cambios'} 
-                                icon={saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'} 
-                                className="p-button-success"
-                                onClick={guardarCambios}
-                                disabled={saving || cantidad < 0}
-                            />
+                            <Button label="Cancelar" icon="pi pi-times" className="p-button-outlined" onClick={() => router.push('/emprendedor/inventario')} disabled={saving} />
+                            <Button label={saving ? 'Guardando...' : 'Guardar Cambios'} icon={saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'} className="p-button-success" onClick={guardarCambios} disabled={saving || cantidad < 0} />
                         </div>
                     </Card>
                 </div>

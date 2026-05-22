@@ -31,6 +31,9 @@ public class ProductoRequestDto {
     @Positive(message = "El ID de categoría debe ser un número positivo")
     private Long categoriaId;
 
+    @Positive(message = "El ID de emprendedor debe ser un número positivo")
+    private Long emprendedorId;
+
     // Constructor vacío
     public ProductoRequestDto() {
     }
@@ -38,7 +41,7 @@ public class ProductoRequestDto {
     // Constructor actualizado
     public ProductoRequestDto(String nombre, String descripcion, BigDecimal precio,
                               String imagen, Boolean activo,
-                              Long empresaId, Long categoriaId) {
+                              Long empresaId, Long categoriaId, Long emprendedorId) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
@@ -46,6 +49,7 @@ public class ProductoRequestDto {
         this.activo = activo;
         this.empresaId = empresaId;
         this.categoriaId = categoriaId;
+        this.emprendedorId = emprendedorId;
     }
 
     // Getters y setters
@@ -103,5 +107,13 @@ public class ProductoRequestDto {
 
     public void setCategoriaId(Long categoriaId) {
         this.categoriaId = categoriaId;
+    }
+
+    public Long getEmprendedorId() {
+        return emprendedorId;
+    }
+
+    public void setEmprendedorId(Long emprendedorId) {
+        this.emprendedorId = emprendedorId;
     }
 }

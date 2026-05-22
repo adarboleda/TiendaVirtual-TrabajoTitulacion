@@ -77,12 +77,12 @@ const ProductosPage: React.FC = () => {
 
         // ✅ CORREGIDO: Filtrar por NOMBRE de categoría
         if (selectedCategoriaNombre) {
-            resultado = resultado.filter(p => p.categoria.nombre === selectedCategoriaNombre);
+            resultado = resultado.filter((p) => p.categoria.nombre === selectedCategoriaNombre);
         }
 
         // ✅ CORREGIDO: Filtrar por NOMBRE de empresa
         if (selectedEmpresaNombre) {
-            resultado = resultado.filter(p => p.empresa.nombre === selectedEmpresaNombre);
+            resultado = resultado.filter((p) => p.empresa.nombre === selectedEmpresaNombre);
         }
 
         // Ordenar
@@ -108,9 +108,9 @@ const ProductosPage: React.FC = () => {
         const initializePage = async () => {
             setMounted(true);
             window.scrollTo(0, 0);
-            
+
             setIsAuthenticated(authService.isAuthenticated());
-            
+
             // ✅ CORREGIDO: Procesar parámetros por NOMBRE
             const categoria = searchParams.get('categoria');
             const empresa = searchParams.get('empresa');
@@ -128,11 +128,11 @@ const ProductosPage: React.FC = () => {
 
     useEffect(() => {
         if (!mounted) return;
-        
+
         const checkAuth = () => {
             setIsAuthenticated(authService.isAuthenticated());
         };
-        
+
         const interval = setInterval(checkAuth, 5000);
         return () => clearInterval(interval);
     }, [mounted]);
@@ -141,10 +141,10 @@ const ProductosPage: React.FC = () => {
         setLoading(true);
         try {
             console.log('🚀 Iniciando carga de datos (ProductosPage)...');
-            
+
             const productosRes = await productService.obtenerProductos();
             console.log('📦 Productos cargados:', productosRes.success);
-            
+
             if (productosRes.success && productosRes.data) {
                 setProductos(productosRes.data);
                 console.log('✅ Productos seteados:', productosRes.data.length);
@@ -157,10 +157,7 @@ const ProductosPage: React.FC = () => {
                 });
             }
 
-            const [categoriasRes, empresasRes] = await Promise.all([
-                productService.obtenerCategorias(),
-                productService.obtenerEmpresas()
-            ]);
+            const [categoriasRes, empresasRes] = await Promise.all([productService.obtenerCategorias(), productService.obtenerEmpresas()]);
 
             if (categoriasRes.success && categoriasRes.data) {
                 setCategorias(categoriasRes.data);
@@ -169,7 +166,6 @@ const ProductosPage: React.FC = () => {
             if (empresasRes.success && empresasRes.data) {
                 setEmpresas(empresasRes.data);
             }
-
         } catch (error) {
             console.error('❌ Error cargando datos:', error);
             toast.current?.show({
@@ -199,7 +195,7 @@ const ProductosPage: React.FC = () => {
             setShowLoginDialog(true);
         } else {
             const validacion = productService.puedeAgregarAlCarrito(producto, 1);
-            
+
             if (!validacion.puede) {
                 toast.current?.show({
                     severity: 'warn',
@@ -209,7 +205,7 @@ const ProductosPage: React.FC = () => {
                 });
                 return;
             }
-            
+
             // ✅ CORREGIDO: Convertir ProductoResponse a Producto para cartService
             const productoParaCarrito = {
                 id: producto.id,
@@ -223,9 +219,9 @@ const ProductosPage: React.FC = () => {
                 fechaCreacion: producto.fechaCreacion,
                 fechaActualizacion: producto.fechaActualizacion
             };
-            
+
             const result = cartService.addToCart(productoParaCarrito, 1);
-            
+
             if (result.success) {
                 toast.current?.show({
                     severity: 'success',
@@ -282,34 +278,34 @@ const ProductosPage: React.FC = () => {
 
         const header = (
             <div className="relative overflow-hidden">
-                <img 
-                    src={producto.imagen || 'https://via.placeholder.com/400x290?text=Producto'} 
+                <img
+                    src={producto.imagen || '/demo/images/product/product-placeholder.svg'}
                     onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x290?text=Producto';
+                        (e.target as HTMLImageElement).src = '/demo/images/product/product-placeholder.svg';
                     }}
                     alt={producto.nombre}
                     className="w-full object-cover transition-all transition-duration-300 hover:scale-105 cursor-pointer"
                     style={{ height: '200px' }}
                     onClick={() => handleProductClick(producto)}
                 />
-                
+
                 {!hasStock && (
-                    <Badge 
-                        value="Sin Stock" 
-                        severity="danger" 
+                    <Badge
+                        value="Sin Stock"
+                        severity="danger"
                         className="absolute top-2 right-2"
-                        style={{ 
+                        style={{
                             backgroundColor: '#ef4444',
                             fontSize: '0.75rem'
                         }}
                     />
                 )}
                 {hasStock && nivelStock === 'bajo' && (
-                    <Badge 
-                        value="¡Pocas!" 
-                        severity="warning" 
+                    <Badge
+                        value="¡Pocas!"
+                        severity="warning"
                         className="absolute top-2 right-2"
-                        style={{ 
+                        style={{
                             backgroundColor: '#f59e0b',
                             fontSize: '0.75rem'
                         }}
@@ -319,7 +315,7 @@ const ProductosPage: React.FC = () => {
         );
 
         return (
-            <Card 
+            <Card
                 key={producto.id}
                 header={header}
                 className="h-full shadow-2 border-round-lg overflow-hidden transition-all transition-duration-300 hover:shadow-4 product-card"
@@ -345,10 +341,10 @@ const ProductosPage: React.FC = () => {
                     <div className="p-3 flex-1" style={{ paddingBottom: 0 }}>
                         {/* Badges */}
                         <div className="flex align-items-center justify-content-between mb-2 flex-wrap gap-1">
-                            <Badge 
-                                value={producto.categoria.nombre} 
+                            <Badge
+                                value={producto.categoria.nombre}
                                 className="text-xs cursor-pointer"
-                                style={{ 
+                                style={{
                                     backgroundColor: `${primaryColor}15`,
                                     color: primaryColor,
                                     border: `1px solid ${primaryColor}20`,
@@ -360,10 +356,10 @@ const ProductosPage: React.FC = () => {
                                     setSidebarVisible(false);
                                 }}
                             />
-                            <Badge 
+                            <Badge
                                 value={producto.empresa.nombre.length > 12 ? `${producto.empresa.nombre.substring(0, 12)}...` : producto.empresa.nombre}
                                 className="text-xs cursor-pointer"
-                                style={{ 
+                                style={{
                                     backgroundColor: primaryColor,
                                     color: 'white',
                                     fontSize: '0.7rem',
@@ -376,11 +372,11 @@ const ProductosPage: React.FC = () => {
                                 title={producto.empresa.nombre} // ✅ Tooltip con nombre completo
                             />
                         </div>
-                        
+
                         {/* Nombre del producto - altura fija */}
-                        <h5 
-                            className="m-0 mb-2 text-900 font-bold cursor-pointer hover:text-primary transition-colors transition-duration-200" 
-                            style={{ 
+                        <h5
+                            className="m-0 mb-2 text-900 font-bold cursor-pointer hover:text-primary transition-colors transition-duration-200"
+                            style={{
                                 fontSize: '1rem',
                                 lineHeight: '1.3',
                                 height: '2.6rem', // ✅ Altura fija para 2 líneas
@@ -394,9 +390,9 @@ const ProductosPage: React.FC = () => {
                         >
                             {producto.nombre}
                         </h5>
-                        
+
                         {/* Descripción - altura fija */}
-                        <p 
+                        <p
                             className="text-600 text-sm mb-2"
                             style={{
                                 lineHeight: '1.4',
@@ -410,23 +406,17 @@ const ProductosPage: React.FC = () => {
                         >
                             {producto.descripcion}
                         </p>
-                        
+
                         {/* Stock info */}
-                        <div 
+                        <div
                             className="flex align-items-center p-2 border-round-md mb-3"
-                            style={{ 
+                            style={{
                                 backgroundColor: hasStock ? `${primaryColor}08` : '#ef444408',
                                 border: `1px solid ${hasStock ? primaryColor : '#ef4444'}15`
                             }}
                         >
-                            <i 
-                                className={`pi ${hasStock ? 'pi-check-circle' : 'pi-times-circle'} mr-1 text-xs`} 
-                                style={{ color: hasStock ? primaryColor : '#ef4444' }}
-                            ></i>
-                            <small 
-                                className="text-xs font-medium" 
-                                style={{ color: hasStock ? primaryColor : '#ef4444' }}
-                            >
+                            <i className={`pi ${hasStock ? 'pi-check-circle' : 'pi-times-circle'} mr-1 text-xs`} style={{ color: hasStock ? primaryColor : '#ef4444' }}></i>
+                            <small className="text-xs font-medium" style={{ color: hasStock ? primaryColor : '#ef4444' }}>
                                 {mensajeStock}
                             </small>
                         </div>
@@ -434,25 +424,22 @@ const ProductosPage: React.FC = () => {
 
                     {/* ✅ Footer siempre en la parte inferior */}
                     <div className="p-3 pt-0">
-                        {(isAuthenticated && authService.canViewPrices()) ? (
+                        {isAuthenticated && authService.canViewPrices() ? (
                             <div className="flex justify-content-between align-items-center">
-                                <div 
-                                    className="text-xl font-bold"
-                                    style={{ color: primaryColor }}
-                                >
+                                <div className="text-xl font-bold" style={{ color: primaryColor }}>
                                     {productService.formatearPrecio(producto.precio)}
                                 </div>
-                                <Button 
+                                <Button
                                     icon="pi pi-shopping-cart"
-                                    label={authService.isEmployee() ? "Gestionar" : "Agregar"}
+                                    label={authService.isEmployee() ? 'Gestionar' : 'Agregar'}
                                     className="p-button-sm"
                                     disabled={authService.isEmployee() ? false : !hasStock}
                                     style={{
-                                        backgroundColor: (authService.isEmployee() || hasStock) ? primaryColor : 'var(--surface-400)',
-                                        borderColor: (authService.isEmployee() || hasStock) ? primaryColor : 'var(--surface-400)',
+                                        backgroundColor: authService.isEmployee() || hasStock ? primaryColor : 'var(--surface-400)',
+                                        borderColor: authService.isEmployee() || hasStock ? primaryColor : 'var(--surface-400)',
                                         color: 'white',
                                         transition: 'all 0.3s ease',
-                                        opacity: (authService.isEmployee() || hasStock) ? 1 : 0.6,
+                                        opacity: authService.isEmployee() || hasStock ? 1 : 0.6,
                                         fontSize: '0.8rem',
                                         padding: '0.5rem 1rem'
                                     }}
@@ -471,7 +458,7 @@ const ProductosPage: React.FC = () => {
                                     <i className="pi pi-lock mr-1" style={{ color: primaryColor }}></i>
                                     Inicia sesión para ver precios
                                 </div>
-                                <Button 
+                                <Button
                                     label="Iniciar Sesión"
                                     icon="pi pi-sign-in"
                                     className="p-button-sm p-button-outlined w-full"
@@ -522,12 +509,7 @@ const ProductosPage: React.FC = () => {
                 <label className="block mb-2 font-semibold text-sm text-900">Buscar productos</label>
                 <span className="p-input-icon-left w-full">
                     <i className="pi pi-search" />
-                    <InputText
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar por nombre, descripción..."
-                        className="w-full"
-                    />
+                    <InputText value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar por nombre, descripción..." className="w-full" />
                 </span>
             </div>
 
@@ -537,10 +519,7 @@ const ProductosPage: React.FC = () => {
                 <Dropdown
                     value={selectedCategoriaNombre}
                     onChange={(e) => setSelectedCategoriaNombre(e.value)}
-                    options={[
-                        { label: 'Todas las categorías', value: null },
-                        ...categorias.map(cat => ({ label: cat.nombre, value: cat.nombre }))
-                    ]}
+                    options={[{ label: 'Todas las categorías', value: null }, ...categorias.map((cat) => ({ label: cat.nombre, value: cat.nombre }))]}
                     placeholder="Seleccionar categoría"
                     className="w-full"
                     showClear
@@ -552,10 +531,7 @@ const ProductosPage: React.FC = () => {
                 <Dropdown
                     value={selectedEmpresaNombre}
                     onChange={(e) => setSelectedEmpresaNombre(e.value)}
-                    options={[
-                        { label: 'Todas las empresas', value: null },
-                        ...empresas.map(emp => ({ label: emp.nombre, value: emp.nombre }))
-                    ]}
+                    options={[{ label: 'Todas las empresas', value: null }, ...empresas.map((emp) => ({ label: emp.nombre, value: emp.nombre }))]}
                     placeholder="Seleccionar empresa"
                     className="w-full"
                     showClear
@@ -564,7 +540,7 @@ const ProductosPage: React.FC = () => {
 
             <Divider />
 
-            <Button 
+            <Button
                 label="Limpiar Filtros"
                 icon="pi pi-filter-slash"
                 className="w-full p-button-outlined"
@@ -582,7 +558,7 @@ const ProductosPage: React.FC = () => {
     // ✅ NUEVO: Modal de producto
     const renderProductModal = () => {
         if (!selectedProduct) return null;
-        
+
         const hasStock = productService.tieneStock(selectedProduct);
         const mensajeStock = productService.getMensajeStock(selectedProduct);
 
@@ -603,63 +579,43 @@ const ProductosPage: React.FC = () => {
             >
                 <div className="grid">
                     <div className="col-12 md:col-5">
-                        <img 
-                            src={selectedProduct.imagen || 'https://via.placeholder.com/400x400?text=Producto'}
-                            alt={selectedProduct.nombre}
-                            className="w-full border-round-lg shadow-2"
-                            style={{ maxHeight: '300px', objectFit: 'cover' }}
-                        />
+                        <img src={selectedProduct.imagen || '/demo/images/product/product-placeholder.svg'} alt={selectedProduct.nombre} className="w-full border-round-lg shadow-2" style={{ maxHeight: '300px', objectFit: 'cover' }} />
                     </div>
                     <div className="col-12 md:col-7">
                         <h2 className="text-2xl font-bold mb-3 text-900">{selectedProduct.nombre}</h2>
-                        
+
                         <div className="flex align-items-center gap-2 mb-3">
-                            <Badge 
-                                value={selectedProduct.categoria.nombre}
-                                style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
-                            />
-                            <Badge 
-                                value={selectedProduct.empresa.nombre}
-                                style={{ backgroundColor: primaryColor, color: 'white' }}
-                            />
+                            <Badge value={selectedProduct.categoria.nombre} style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }} />
+                            <Badge value={selectedProduct.empresa.nombre} style={{ backgroundColor: primaryColor, color: 'white' }} />
                         </div>
 
                         <p className="text-700 line-height-3 mb-4">{selectedProduct.descripcion}</p>
 
-                        <div 
+                        <div
                             className="flex align-items-center p-3 border-round-md mb-4"
-                            style={{ 
+                            style={{
                                 backgroundColor: hasStock ? `${primaryColor}08` : '#ef444408',
                                 border: `1px solid ${hasStock ? primaryColor : '#ef4444'}15`
                             }}
                         >
-                            <i 
-                                className={`pi ${hasStock ? 'pi-check-circle' : 'pi-times-circle'} mr-2`} 
-                                style={{ color: hasStock ? primaryColor : '#ef4444' }}
-                            ></i>
-                            <span 
-                                className="font-medium" 
-                                style={{ color: hasStock ? primaryColor : '#ef4444' }}
-                            >
+                            <i className={`pi ${hasStock ? 'pi-check-circle' : 'pi-times-circle'} mr-2`} style={{ color: hasStock ? primaryColor : '#ef4444' }}></i>
+                            <span className="font-medium" style={{ color: hasStock ? primaryColor : '#ef4444' }}>
                                 {mensajeStock}
                             </span>
                         </div>
 
-                        {(isAuthenticated && authService.canViewPrices()) ? (
+                        {isAuthenticated && authService.canViewPrices() ? (
                             <div className="flex align-items-center justify-content-between">
-                                <div 
-                                    className="text-3xl font-bold"
-                                    style={{ color: primaryColor }}
-                                >
+                                <div className="text-3xl font-bold" style={{ color: primaryColor }}>
                                     {productService.formatearPrecio(selectedProduct.precio)}
                                 </div>
-                                <Button 
+                                <Button
                                     icon="pi pi-shopping-cart"
-                                    label={authService.isEmployee() ? "Gestionar" : "Agregar al Carrito"}
+                                    label={authService.isEmployee() ? 'Gestionar' : 'Agregar al Carrito'}
                                     disabled={authService.isEmployee() ? false : !hasStock}
                                     style={{
-                                        backgroundColor: (authService.isEmployee() || hasStock) ? primaryColor : 'var(--surface-400)',
-                                        borderColor: (authService.isEmployee() || hasStock) ? primaryColor : 'var(--surface-400)',
+                                        backgroundColor: authService.isEmployee() || hasStock ? primaryColor : 'var(--surface-400)',
+                                        borderColor: authService.isEmployee() || hasStock ? primaryColor : 'var(--surface-400)'
                                     }}
                                     onClick={() => {
                                         if (authService.isEmployee()) {
@@ -677,7 +633,7 @@ const ProductosPage: React.FC = () => {
                                     <i className="pi pi-lock mr-2" style={{ color: primaryColor }}></i>
                                     Inicia sesión para ver precios y comprar
                                 </div>
-                                <Button 
+                                <Button
                                     label="Iniciar Sesión"
                                     icon="pi pi-sign-in"
                                     className="w-full"
@@ -699,7 +655,7 @@ const ProductosPage: React.FC = () => {
         <>
             <Toast ref={toast} />
             <ConfirmDialog />
-            
+
             {!mounted ? (
                 <div className="min-h-screen flex align-items-center justify-content-center" style={{ backgroundColor: 'var(--surface-ground)' }}>
                     <i className="pi pi-spin pi-spinner text-4xl" style={{ color: primaryColor }}></i>
@@ -707,11 +663,8 @@ const ProductosPage: React.FC = () => {
             ) : (
                 <>
                     {/* ✅ CORREGIDO: Remover LandingNavbar duplicado */}
-                    
-                    <div 
-                        className="min-h-screen pt-4 pb-6"
-                        style={{ backgroundColor: 'var(--surface-ground)' }}
-                    >
+
+                    <div className="min-h-screen pt-4 pb-6" style={{ backgroundColor: 'var(--surface-ground)' }}>
                         <div className="container mx-auto px-4 max-w-7xl">
                             {/* Header */}
                             <div className="mb-6">
@@ -724,7 +677,7 @@ const ProductosPage: React.FC = () => {
                                             {loading ? 'Cargando...' : `${productosFiltrados.length} productos disponibles`}
                                         </p>
                                     </div>
-                                    
+
                                     <div className="flex align-items-center gap-2">
                                         <Button
                                             icon="pi pi-filter"
@@ -736,45 +689,22 @@ const ProductosPage: React.FC = () => {
                                                 color: primaryColor
                                             }}
                                         />
-                                        
-                                        <Dropdown
-                                            value={sortBy}
-                                            onChange={(e) => setSortBy(e.value)}
-                                            options={sortOptions}
-                                            placeholder="Ordenar por"
-                                            className="w-12rem"
-                                        />
+
+                                        <Dropdown value={sortBy} onChange={(e) => setSortBy(e.value)} options={sortOptions} placeholder="Ordenar por" className="w-12rem" />
                                     </div>
                                 </div>
 
                                 {/* Filtros activos */}
                                 {(selectedCategoriaNombre || selectedEmpresaNombre || searchTerm) && (
                                     <div className="flex align-items-center gap-2 mt-4 flex-wrap">
-                                        <span className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>Filtros activos:</span>
-                                        {searchTerm && (
-                                            <Chip 
-                                                label={`Búsqueda: "${searchTerm}"`}
-                                                removable
-                                                onRemove={() => setSearchTerm('')}
-                                                style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
-                                            />
-                                        )}
+                                        <span className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>
+                                            Filtros activos:
+                                        </span>
+                                        {searchTerm && <Chip label={`Búsqueda: "${searchTerm}"`} removable onRemove={() => setSearchTerm('')} style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }} />}
                                         {selectedCategoriaNombre && (
-                                            <Chip 
-                                                label={`Categoría: ${selectedCategoriaNombre}`}
-                                                removable
-                                                onRemove={() => setSelectedCategoriaNombre(null)}
-                                                style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
-                                            />
+                                            <Chip label={`Categoría: ${selectedCategoriaNombre}`} removable onRemove={() => setSelectedCategoriaNombre(null)} style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }} />
                                         )}
-                                        {selectedEmpresaNombre && (
-                                            <Chip 
-                                                label={`Empresa: ${selectedEmpresaNombre}`}
-                                                removable
-                                                onRemove={() => setSelectedEmpresaNombre(null)}
-                                                style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
-                                            />
-                                        )}
+                                        {selectedEmpresaNombre && <Chip label={`Empresa: ${selectedEmpresaNombre}`} removable onRemove={() => setSelectedEmpresaNombre(null)} style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }} />}
                                     </div>
                                 )}
                             </div>
@@ -783,10 +713,7 @@ const ProductosPage: React.FC = () => {
                             <div className="grid">
                                 {/* Sidebar de filtros - Desktop */}
                                 <div className="col-12 lg:col-3 hidden lg:block">
-                                    <Card 
-                                        className="sticky top-4"
-                                        style={{ backgroundColor: 'var(--surface-card)' }}
-                                    >
+                                    <Card className="sticky top-4" style={{ backgroundColor: 'var(--surface-card)' }}>
                                         {renderFiltros()}
                                     </Card>
                                 </div>
@@ -811,17 +738,16 @@ const ProductosPage: React.FC = () => {
                                         </div>
                                     ) : (
                                         <div className="text-center py-8">
-                                            <Card 
-                                                className="max-w-md mx-auto"
-                                                style={{ backgroundColor: 'var(--surface-card)' }}
-                                            >
+                                            <Card className="max-w-md mx-auto" style={{ backgroundColor: 'var(--surface-card)' }}>
                                                 <div className="p-6">
                                                     <i className="pi pi-search text-6xl mb-4" style={{ color: primaryColor }}></i>
-                                                    <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-color)' }}>No se encontraron productos</h3>
+                                                    <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-color)' }}>
+                                                        No se encontraron productos
+                                                    </h3>
                                                     <p className="mb-4" style={{ color: 'var(--text-color-secondary)' }}>
                                                         No hay productos que coincidan con los filtros aplicados.
                                                     </p>
-                                                    <Button 
+                                                    <Button
                                                         label="Limpiar filtros"
                                                         icon="pi pi-filter-slash"
                                                         className="p-button-outlined"
@@ -870,49 +796,42 @@ const ProductosPage: React.FC = () => {
                     {renderProductModal()}
 
                     {/* Dialog para login */}
-                    <Dialog
-                        header="Iniciar Sesión Requerido"
-                        visible={showLoginDialog}
-                        onHide={() => setShowLoginDialog(false)}
-                        style={{ width: '400px' }}
-                        modal
-                    >
+                    <Dialog header="Iniciar Sesión Requerido" visible={showLoginDialog} onHide={() => setShowLoginDialog(false)} style={{ width: '400px' }} modal>
                         <div className="text-center p-3">
-                            <div 
+                            <div
                                 className="p-3 border-round-2xl mx-auto mb-3"
-                                style={{ 
+                                style={{
                                     backgroundColor: `${primaryColor}15`,
                                     width: 'fit-content'
                                 }}
                             >
                                 <i className="pi pi-info-circle text-4xl" style={{ color: primaryColor }}></i>
                             </div>
-                            <h3 className="mb-3 font-bold" style={{ color: 'var(--text-color)' }}>¡Inicia Sesión!</h3>
+                            <h3 className="mb-3 font-bold" style={{ color: 'var(--text-color)' }}>
+                                ¡Inicia Sesión!
+                            </h3>
                             <p className="mb-4 line-height-3" style={{ color: 'var(--text-color-secondary)' }}>
                                 Para agregar productos al carrito y ver precios, necesitas iniciar sesión en tu cuenta.
                             </p>
                             {selectedProduct && (
-                                <div 
+                                <div
                                     className="p-3 border-round-xl mb-4"
                                     style={{
                                         backgroundColor: 'var(--surface-card)',
                                         border: `1px solid ${primaryColor}20`
                                     }}
                                 >
-                                    <small className="block mb-1" style={{ color: 'var(--text-color-secondary)' }}>Producto seleccionado:</small>
+                                    <small className="block mb-1" style={{ color: 'var(--text-color-secondary)' }}>
+                                        Producto seleccionado:
+                                    </small>
                                     <div className="font-bold" style={{ color: primaryColor }}>
                                         {selectedProduct.nombre}
                                     </div>
                                 </div>
                             )}
                             <div className="flex gap-3 justify-content-center">
-                                <Button 
-                                    label="Cancelar"
-                                    icon="pi pi-times"
-                                    className="p-button-text"
-                                    onClick={() => setShowLoginDialog(false)}
-                                />
-                                <Button 
+                                <Button label="Cancelar" icon="pi pi-times" className="p-button-text" onClick={() => setShowLoginDialog(false)} />
+                                <Button
                                     label="Iniciar Sesión"
                                     icon="pi pi-sign-in"
                                     style={{
@@ -930,24 +849,24 @@ const ProductosPage: React.FC = () => {
                         .product-card {
                             min-height: 420px;
                         }
-                        
+
                         .product-card .p-card-content {
                             padding: 0;
                         }
-                        
+
                         .product-modal .p-dialog-content {
                             padding: 1.5rem;
                         }
-                        
+
                         .product-modal .p-dialog-header {
                             background: linear-gradient(135deg, var(--primary-color) 0%, var(--pink-500) 100%);
                             color: white;
                         }
-                        
+
                         .product-modal .p-dialog-header .p-dialog-title {
                             color: white;
                         }
-                        
+
                         .product-modal .p-dialog-header-icon {
                             color: white;
                         }

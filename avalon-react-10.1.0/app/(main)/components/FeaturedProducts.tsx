@@ -33,7 +33,7 @@ const FeaturedProducts: React.FC = () => {
         };
 
         checkAuth();
-        
+
         // Verificar cada 5 segundos
         const interval = setInterval(checkAuth, 5000);
         // Escuchar cambios en localStorage
@@ -49,15 +49,15 @@ const FeaturedProducts: React.FC = () => {
     // ✅ CARGAR PRODUCTOS AL INICIAR
     useEffect(() => {
         cargarProductos();
-        
+
         // ✅ ESCUCHAR EVENTOS DE ACTUALIZACIÓN DE STOCK
         const handleStockUpdate = (event: any) => {
             const { productoId, stock } = event.detail;
             console.log(`📦 Stock actualizado en FeaturedProducts para producto ${productoId}: ${stock}`);
-            
+
             // Forzar re-render actualizando el estado
-            setProductos(prevProductos => 
-                prevProductos.map(producto => {
+            setProductos((prevProductos) =>
+                prevProductos.map((producto) => {
                     if (producto.id === productoId) {
                         console.log(`🔄 Actualizando UI producto ${producto.nombre}: stock ${stock}`);
                         return {
@@ -76,7 +76,7 @@ const FeaturedProducts: React.FC = () => {
         };
 
         window.addEventListener('stockUpdated', handleStockUpdate);
-        
+
         return () => {
             window.removeEventListener('stockUpdated', handleStockUpdate);
         };
@@ -89,9 +89,9 @@ const FeaturedProducts: React.FC = () => {
         setLoading(true);
         try {
             console.log('🚀 FeaturedProducts - Cargando productos...');
-            
+
             const response = await productService.obtenerProductos();
-            
+
             if (response.success && response.data) {
                 // Tomar solo los primeros 3 productos
                 const productosDestacados = response.data.slice(0, 3);
@@ -131,7 +131,7 @@ const FeaturedProducts: React.FC = () => {
 
         // ✅ VALIDAR STOCK antes de agregar
         const validacion = productService.puedeAgregarAlCarrito(producto, 1);
-        
+
         if (!validacion.puede) {
             toast.current?.show({
                 severity: 'warn',
@@ -141,10 +141,10 @@ const FeaturedProducts: React.FC = () => {
             });
             return;
         }
-        
+
         // ✅ AGREGAR AL CARRITO
         const result = cartService.addToCart(producto, 1);
-        
+
         if (result.success) {
             toast.current?.show({
                 severity: 'success',
@@ -195,64 +195,47 @@ const FeaturedProducts: React.FC = () => {
         const nivelStock = productService.getNivelStock(producto);
         const mensajeStock = productService.getMensajeStock(producto);
         const cantidadStock = productService.getCantidadDisponible(producto);
-        
+
         console.log(`🔍 Producto ${producto.nombre}: stock=${cantidadStock}, hasStock=${hasStock}, mensaje="${mensajeStock}"`);
-        
+
         const header = (
             <div className="relative overflow-hidden">
-                <img 
-                    src={producto.imagen} 
+                <img
+                    src={producto.imagen}
                     onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x290?text=Producto';
+                        (e.target as HTMLImageElement).src = '/demo/images/product/product-placeholder.svg';
                     }}
                     alt={producto.nombre}
                     className="w-full object-cover transition-all transition-duration-300 hover:scale-105"
                     style={{ height: '250px' }}
                 />
-                
+
                 {/* ✅ BADGES DE STOCK */}
-                {!hasStock && (
-                    <Badge 
-                        value="No Disponible" 
-                        severity="danger" 
-                        className="absolute top-2 right-2"
-                        style={{ backgroundColor: '#ef4444', fontSize: '0.75rem' }}
-                    />
-                )}
-                {hasStock && nivelStock === 'bajo' && (
-                    <Badge 
-                        value="¡Pocas!" 
-                        severity="warning" 
-                        className="absolute top-2 right-2"
-                        style={{ backgroundColor: '#f59e0b', fontSize: '0.75rem' }}
-                    />
-                )}
+                {!hasStock && <Badge value="No Disponible" severity="danger" className="absolute top-2 right-2" style={{ backgroundColor: '#ef4444', fontSize: '0.75rem' }} />}
+                {hasStock && nivelStock === 'bajo' && <Badge value="¡Pocas!" severity="warning" className="absolute top-2 right-2" style={{ backgroundColor: '#f59e0b', fontSize: '0.75rem' }} />}
             </div>
         );
 
         const footer = (
             <div className="p-3">
-                {(isAuthenticated && authService.canViewPrices()) ? (
+                {isAuthenticated && authService.canViewPrices() ? (
                     <div className="flex justify-content-between align-items-center">
-                        <div 
-                            className="text-xl font-bold"
-                            style={{ color: primaryColor }}
-                        >
+                        <div className="text-xl font-bold" style={{ color: primaryColor }}>
                             {productService.formatearPrecio(producto.precio)}
                         </div>
-                        <Button 
+                        <Button
                             icon="pi pi-shopping-cart"
-                            label={authService.isEmployee() ? "Gestionar" : "Agregar"}
+                            label={authService.isEmployee() ? 'Gestionar' : 'Agregar'}
                             className="p-button-sm"
                             disabled={authService.isEmployee() ? false : !hasStock}
                             style={{
-                                backgroundColor: (authService.isEmployee() || hasStock) ? primaryColor : 'var(--surface-400)',
-                                borderColor: (authService.isEmployee() || hasStock) ? primaryColor : 'var(--surface-400)',
+                                backgroundColor: authService.isEmployee() || hasStock ? primaryColor : 'var(--surface-400)',
+                                borderColor: authService.isEmployee() || hasStock ? primaryColor : 'var(--surface-400)',
                                 color: 'white',
                                 padding: '0.5rem 1rem',
                                 fontSize: '0.9rem',
                                 transition: 'all 0.3s ease',
-                                opacity: (authService.isEmployee() || hasStock) ? 1 : 0.6
+                                opacity: authService.isEmployee() || hasStock ? 1 : 0.6
                             }}
                             onMouseEnter={(e) => {
                                 if (authService.isEmployee() || hasStock) {
@@ -283,7 +266,7 @@ const FeaturedProducts: React.FC = () => {
                             <i className="pi pi-lock mr-1" style={{ color: primaryColor }}></i>
                             Inicia sesión para ver precios
                         </div>
-                        <Button 
+                        <Button
                             label="Iniciar Sesión"
                             icon="pi pi-sign-in"
                             className="p-button-sm p-button-outlined w-full"
@@ -312,9 +295,9 @@ const FeaturedProducts: React.FC = () => {
         );
 
         return (
-            <Card 
+            <Card
                 key={producto.id}
-                header={header} 
+                header={header}
                 footer={footer}
                 className="h-full shadow-2 border-round-lg overflow-hidden transition-all transition-duration-300 hover:shadow-4"
                 style={{
@@ -333,19 +316,19 @@ const FeaturedProducts: React.FC = () => {
             >
                 <div className="p-3" style={{ paddingBottom: 0 }}>
                     <div className="flex align-items-center justify-content-between mb-2">
-                        <Badge 
-                            value={producto.categoria.nombre} 
+                        <Badge
+                            value={producto.categoria.nombre}
                             className="text-xs"
-                            style={{ 
+                            style={{
                                 backgroundColor: `${primaryColor}15`,
                                 color: primaryColor,
                                 border: `1px solid ${primaryColor}20`,
                                 fontSize: '0.7rem'
                             }}
                         />
-                        <div 
+                        <div
                             className="text-xs font-bold px-2 py-1 border-round-xl"
-                            style={{ 
+                            style={{
                                 backgroundColor: primaryColor,
                                 color: 'white'
                             }}
@@ -353,34 +336,23 @@ const FeaturedProducts: React.FC = () => {
                             {producto.empresa.nombre}
                         </div>
                     </div>
-                    
+
                     <h5 className="m-0 mb-2 text-900 font-bold line-height-3" style={{ fontSize: '1.1rem' }}>
                         {producto.nombre}
                     </h5>
-                    
-                    <p className="text-600 line-height-3 text-sm mb-2">
-                        {producto.descripcion.length > 80 
-                            ? `${producto.descripcion.substring(0, 80)}...`
-                            : producto.descripcion
-                        }
-                    </p>
-                    
+
+                    <p className="text-600 line-height-3 text-sm mb-2">{producto.descripcion.length > 80 ? `${producto.descripcion.substring(0, 80)}...` : producto.descripcion}</p>
+
                     {/* ✅ INFORMACIÓN DE STOCK */}
-                    <div 
+                    <div
                         className="flex align-items-center p-2 border-round-md"
-                        style={{ 
+                        style={{
                             backgroundColor: hasStock ? `${primaryColor}08` : '#ef444408',
                             border: `1px solid ${hasStock ? primaryColor : '#ef4444'}15`
                         }}
                     >
-                        <i 
-                            className={`pi ${hasStock ? 'pi-check-circle' : 'pi-times-circle'} mr-1 text-xs`} 
-                            style={{ color: hasStock ? primaryColor : '#ef4444' }}
-                        ></i>
-                        <small 
-                            className="text-xs font-medium" 
-                            style={{ color: hasStock ? primaryColor : '#ef4444' }}
-                        >
+                        <i className={`pi ${hasStock ? 'pi-check-circle' : 'pi-times-circle'} mr-1 text-xs`} style={{ color: hasStock ? primaryColor : '#ef4444' }}></i>
+                        <small className="text-xs font-medium" style={{ color: hasStock ? primaryColor : '#ef4444' }}>
                             {mensajeStock}
                         </small>
                     </div>
@@ -415,7 +387,7 @@ const FeaturedProducts: React.FC = () => {
         <>
             <Toast ref={toast} />
             <ConfirmDialog />
-            
+
             {/* ✅ CSS OPTIMIZADO PARA GRID */}
             <style jsx>{`
                 .products-grid {
@@ -424,37 +396,40 @@ const FeaturedProducts: React.FC = () => {
                     max-width: 1200px;
                     margin: 0 auto;
                 }
-                
+
                 @media (max-width: 768px) {
-                    .products-grid { grid-template-columns: 1fr; }
+                    .products-grid {
+                        grid-template-columns: 1fr;
+                    }
                 }
-                
+
                 @media (min-width: 769px) and (max-width: 1024px) {
-                    .products-grid { grid-template-columns: repeat(2, 1fr); }
+                    .products-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
                 }
-                
+
                 @media (min-width: 1025px) {
-                    .products-grid { grid-template-columns: repeat(3, 1fr); }
+                    .products-grid {
+                        grid-template-columns: repeat(3, 1fr);
+                    }
                 }
             `}</style>
-            
-            <section 
-                id="productos-destacados" 
-                className="featured-products py-6"
-                style={{ backgroundColor: 'var(--surface-ground)' }}
-            >
+
+            <section id="productos-destacados" className="featured-products py-6" style={{ backgroundColor: 'var(--surface-ground)' }}>
                 <div className="container mx-auto px-4 max-w-6xl">
                     {/* ✅ HEADER */}
                     <div className="text-center mb-6">
-                        <h2 
+                        <h2
                             className="font-bold mb-3 line-height-2"
-                            style={{ 
+                            style={{
                                 fontSize: 'clamp(1.8rem, 4vw, 3rem)',
                                 color: 'var(--text-color)'
                             }}
                         >
-                            Productos <span 
-                                style={{ 
+                            Productos{' '}
+                            <span
+                                style={{
                                     background: `linear-gradient(135deg, ${primaryColor} 0%, var(--primary-600) 100%)`,
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent'
@@ -463,13 +438,9 @@ const FeaturedProducts: React.FC = () => {
                                 Destacados
                             </span>
                         </h2>
-                        
-                        <p 
-                            className="text-lg max-w-2xl mx-auto line-height-3"
-                            style={{ color: 'var(--text-color-secondary)' }}
-                        >
-                            Descubre nuestra selección especial de productos locales más populares, 
-                            creados por emprendedores de las comunidades de Sigchos
+
+                        <p className="text-lg max-w-2xl mx-auto line-height-3" style={{ color: 'var(--text-color-secondary)' }}>
+                            Descubre nuestra selección especial de productos locales más populares, creados por emprendedores de las comunidades de Sigchos
                         </p>
                     </div>
 
@@ -477,22 +448,14 @@ const FeaturedProducts: React.FC = () => {
                     <div className="products-grid">
                         {loading ? (
                             // Skeletons mientras carga
-                            Array.from({ length: 3 }).map((_, index) => (
-                                <div key={index}>
-                                    {renderSkeleton()}
-                                </div>
-                            ))
+                            Array.from({ length: 3 }).map((_, index) => <div key={index}>{renderSkeleton()}</div>)
                         ) : productos.length > 0 ? (
                             // Productos cargados
-                            productos.map((producto) => (
-                                <div key={producto.id}>
-                                    {renderProductCard(producto)}
-                                </div>
-                            ))
+                            productos.map((producto) => <div key={producto.id}>{renderProductCard(producto)}</div>)
                         ) : (
                             // No hay productos
                             <div className="text-center py-6" style={{ gridColumn: '1 / -1' }}>
-                                <div 
+                                <div
                                     className="p-4 border-round-2xl mx-auto max-w-md"
                                     style={{
                                         backgroundColor: 'var(--surface-card)',
@@ -502,7 +465,7 @@ const FeaturedProducts: React.FC = () => {
                                     <i className="pi pi-exclamation-triangle text-4xl mb-3" style={{ color: primaryColor }}></i>
                                     <h3 className="text-900 mb-2 font-bold">No hay productos disponibles</h3>
                                     <p className="text-600 text-sm mb-3">Los productos se están preparando. Por favor, inténtalo más tarde</p>
-                                    <Button 
+                                    <Button
                                         label="Reintentar"
                                         icon="pi pi-refresh"
                                         className="p-button-outlined"
@@ -520,11 +483,11 @@ const FeaturedProducts: React.FC = () => {
                     {/* ✅ BOTÓN VER MÁS */}
                     {productos.length > 0 && (
                         <div className="text-center mt-6">
-                            <Button 
+                            <Button
                                 label="Ver Todos los Productos"
                                 icon="pi pi-arrow-right"
                                 className="p-button-lg p-button-outlined"
-                                style={{ 
+                                style={{
                                     borderColor: primaryColor,
                                     color: primaryColor,
                                     backgroundColor: 'transparent',
@@ -555,17 +518,11 @@ const FeaturedProducts: React.FC = () => {
             </section>
 
             {/* ✅ DIALOG PARA LOGIN */}
-            <Dialog
-                header="Iniciar Sesión Requerido"
-                visible={showLoginDialog}
-                onHide={() => setShowLoginDialog(false)}
-                style={{ width: '400px' }}
-                modal
-            >
+            <Dialog header="Iniciar Sesión Requerido" visible={showLoginDialog} onHide={() => setShowLoginDialog(false)} style={{ width: '400px' }} modal>
                 <div className="text-center p-3">
-                    <div 
+                    <div
                         className="p-3 border-round-2xl mx-auto mb-3"
-                        style={{ 
+                        style={{
                             backgroundColor: `${primaryColor}15`,
                             width: 'fit-content'
                         }}
@@ -573,11 +530,9 @@ const FeaturedProducts: React.FC = () => {
                         <i className="pi pi-info-circle text-4xl" style={{ color: primaryColor }}></i>
                     </div>
                     <h3 className="text-900 mb-3 font-bold">¡Inicia Sesión!</h3>
-                    <p className="text-600 mb-4 line-height-3">
-                        Para agregar productos al carrito y ver precios, necesitas iniciar sesión en tu cuenta.
-                    </p>
+                    <p className="text-600 mb-4 line-height-3">Para agregar productos al carrito y ver precios, necesitas iniciar sesión en tu cuenta.</p>
                     {selectedProduct && (
-                        <div 
+                        <div
                             className="p-3 border-round-xl mb-4"
                             style={{
                                 backgroundColor: 'var(--surface-card)',
@@ -591,13 +546,8 @@ const FeaturedProducts: React.FC = () => {
                         </div>
                     )}
                     <div className="flex gap-3 justify-content-center">
-                        <Button 
-                            label="Cancelar"
-                            icon="pi pi-times"
-                            className="p-button-text"
-                            onClick={() => setShowLoginDialog(false)}
-                        />
-                        <Button 
+                        <Button label="Cancelar" icon="pi pi-times" className="p-button-text" onClick={() => setShowLoginDialog(false)} />
+                        <Button
                             label="Iniciar Sesión"
                             icon="pi pi-sign-in"
                             style={{

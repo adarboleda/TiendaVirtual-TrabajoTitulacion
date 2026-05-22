@@ -27,6 +27,8 @@ public class ProductoMapper {
         producto.setActivo(dto.getActivo() != null ? dto.getActivo() : true);
         producto.setEmpresa(empresa);
         producto.setCategoria(categoria);
+        Long emprendedorId = dto.getEmprendedorId() != null ? dto.getEmprendedorId() : empresa.getId();
+        producto.setEmprendedorId(emprendedorId);
         // Ya no establecemos el stock aquí
         return producto;
     }
@@ -47,6 +49,7 @@ public class ProductoMapper {
         dto.setActivo(entity.getActivo());
         dto.setFechaCreacion(entity.getFechaCreacion());
         dto.setFechaActualizacion(entity.getFechaActualizacion());
+        dto.setEmprendedorId(entity.getEmprendedorId());
 
         // Mapear empresa y categoría
         if (entity.getEmpresa() != null) {

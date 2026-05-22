@@ -21,19 +21,19 @@ const QuantitySelector: React.FC<{
     onChange: (value: number) => void;
 }> = ({ value, min, max, disabled, onChange }) => {
     const primaryColor = 'var(--primary-color)';
-    
+
     const handleDecrease = () => {
         if (value > min && !disabled) {
             onChange(value - 1);
         }
     };
-    
+
     const handleIncrease = () => {
         if (value < max && !disabled) {
             onChange(value + 1);
         }
     };
-    
+
     return (
         <div className="flex align-items-center border-round overflow-hidden" style={{ border: '1px solid #dee2e6' }}>
             <Button
@@ -49,7 +49,7 @@ const QuantitySelector: React.FC<{
                 onClick={handleDecrease}
                 disabled={disabled || value <= min}
             />
-            <div 
+            <div
                 className="flex align-items-center justify-content-center font-medium"
                 style={{
                     minWidth: '50px',
@@ -81,7 +81,7 @@ const QuantitySelector: React.FC<{
 const CartPage: React.FC = () => {
     const router = useRouter();
     const toast = useRef<Toast>(null);
-    
+
     const [cartSummary, setCartSummary] = useState<CartSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
@@ -105,7 +105,7 @@ const CartPage: React.FC = () => {
     const checkAuthAndLoadCart = () => {
         const authStatus = authService.isAuthenticated();
         setIsAuthenticated(authStatus);
-        
+
         if (!authStatus) {
             toast.current?.show({
                 severity: 'warn',
@@ -116,7 +116,7 @@ const CartPage: React.FC = () => {
             router.push('/auth/login2');
             return;
         }
-        
+
         loadCartSummary();
     };
 
@@ -140,12 +140,12 @@ const CartPage: React.FC = () => {
 
     const handleQuantityChange = async (itemId: string, newQuantity: number) => {
         if (newQuantity < 0) return;
-        
+
         setUpdating(itemId);
-        
+
         try {
             const result = await cartService.updateQuantity(itemId, newQuantity);
-            
+
             if (result.success) {
                 loadCartSummary();
                 toast.current?.show({
@@ -185,7 +185,7 @@ const CartPage: React.FC = () => {
             accept: async () => {
                 try {
                     const result = await cartService.removeFromCart(item.id);
-                    
+
                     if (result.success) {
                         loadCartSummary();
                         toast.current?.show({
@@ -225,7 +225,7 @@ const CartPage: React.FC = () => {
             accept: async () => {
                 try {
                     const result = await cartService.clearCart();
-                    
+
                     if (result.success) {
                         loadCartSummary();
                         toast.current?.show({
@@ -257,36 +257,28 @@ const CartPage: React.FC = () => {
             });
             return;
         }
-        
+
         router.push('/checkout');
     };
 
     if (loading) {
         return (
-            <div 
-                className="min-h-screen flex align-items-center justify-content-center"
-                style={{ backgroundColor: 'var(--surface-ground)' }}
-            >
-                <ProgressSpinner 
-                    style={{ width: '50px', height: '50px' }}
-                />
+            <div className="min-h-screen flex align-items-center justify-content-center" style={{ backgroundColor: 'var(--surface-ground)' }}>
+                <ProgressSpinner style={{ width: '50px', height: '50px' }} />
             </div>
         );
     }
 
     if (!cartSummary || cartSummary.totalItems === 0) {
         return (
-            <div 
-                className="min-h-screen pt-6"
-                style={{ backgroundColor: 'var(--surface-ground)' }}
-            >
+            <div className="min-h-screen pt-6" style={{ backgroundColor: 'var(--surface-ground)' }}>
                 <div className="container mx-auto px-4 max-w-4xl">
                     <Card className="text-center p-6" style={{ backgroundColor: 'var(--surface-card)' }}>
                         <i className="pi pi-shopping-cart text-6xl mb-4" style={{ color: primaryColor }}></i>
                         <h2 className="text-2xl font-bold mb-4 text-900">Tu carrito está vacío</h2>
                         <p className="text-600 mb-6">¡Descubre nuestros productos y encuentra algo que te guste!</p>
-                        <Button 
-                            label="Ver productos" 
+                        <Button
+                            label="Ver productos"
                             icon="pi pi-shopping-bag"
                             onClick={() => router.push('/products')}
                             style={{
@@ -304,11 +296,8 @@ const CartPage: React.FC = () => {
         <>
             <Toast ref={toast} />
             <ConfirmDialog />
-            
-            <div 
-                className="min-h-screen pt-6 pb-6"
-                style={{ backgroundColor: 'var(--surface-ground)' }}
-            >
+
+            <div className="min-h-screen pt-6 pb-6" style={{ backgroundColor: 'var(--surface-ground)' }}>
                 <div className="container mx-auto px-4 max-w-6xl">
                     {/* Header mejorado */}
                     <div className="flex flex-column sm:flex-row justify-content-between align-items-start sm:align-items-center mb-6 gap-3">
@@ -323,13 +312,7 @@ const CartPage: React.FC = () => {
                                 </p>
                             </div>
                         </div>
-                        <Button 
-                            label="Vaciar carrito"
-                            icon="pi pi-trash"
-                            className="p-button-outlined p-button-danger"
-                            onClick={handleClearCart}
-                            size="small"
-                        />
+                        <Button label="Vaciar carrito" icon="pi pi-trash" className="p-button-outlined p-button-danger" onClick={handleClearCart} size="small" />
                     </div>
 
                     <div className="grid">
@@ -340,8 +323,8 @@ const CartPage: React.FC = () => {
                                     <div className="grid align-items-center p-3">
                                         {/* Imagen del producto */}
                                         <div className="col-12 sm:col-3 md:col-2">
-                                            <img 
-                                                src={item.producto.imagen || 'https://via.placeholder.com/120x120?text=Producto'}
+                                            <img
+                                                src={item.producto.imagen || '/demo/images/product/product-placeholder.svg'}
                                                 alt={item.producto.nombre}
                                                 className="w-full h-auto border-round shadow-2"
                                                 style={{ maxWidth: '120px', maxHeight: '120px', objectFit: 'cover' }}
@@ -354,13 +337,11 @@ const CartPage: React.FC = () => {
                                                 {/* Nombre y descripción */}
                                                 <div className="col-12 md:col-4">
                                                     <h3 className="text-xl font-bold mb-1 text-900">{item.producto.nombre}</h3>
-                                                    <p className="text-600 text-sm mb-2 line-height-3">
-                                                        {item.producto.descripcion}
-                                                    </p>
+                                                    <p className="text-600 text-sm mb-2 line-height-3">{item.producto.descripcion}</p>
                                                     <div className="flex flex-wrap gap-2">
-                                                        <span 
+                                                        <span
                                                             className="px-2 py-1 border-round text-xs font-medium"
-                                                            style={{ 
+                                                            style={{
                                                                 backgroundColor: `${primaryColor}20`,
                                                                 color: primaryColor,
                                                                 border: `1px solid ${primaryColor}40`
@@ -368,9 +349,9 @@ const CartPage: React.FC = () => {
                                                         >
                                                             {item.producto.categoria.nombre}
                                                         </span>
-                                                        <span 
+                                                        <span
                                                             className="px-2 py-1 border-round text-xs font-medium"
-                                                            style={{ 
+                                                            style={{
                                                                 backgroundColor: `${primaryColor}15`,
                                                                 color: primaryColor,
                                                                 border: `1px solid ${primaryColor}30`
@@ -401,11 +382,7 @@ const CartPage: React.FC = () => {
                                                             onChange={(newValue) => handleQuantityChange(item.id, newValue)}
                                                         />
                                                     </div>
-                                                    {item.producto.inventario && (
-                                                        <div className="text-xs text-600 mt-1">
-                                                            Stock: {item.producto.inventario.cantidad}
-                                                        </div>
-                                                    )}
+                                                    {item.producto.inventario && <div className="text-xs text-600 mt-1">Stock: {item.producto.inventario.cantidad}</div>}
                                                 </div>
 
                                                 {/* Subtotal */}
@@ -437,10 +414,7 @@ const CartPage: React.FC = () => {
 
                         {/* Resumen del pedido mejorado */}
                         <div className="col-12 lg:col-4">
-                            <Card 
-                                className="sticky top-4"
-                                style={{ backgroundColor: 'var(--surface-card)' }}
-                            >
+                            <Card className="sticky top-4" style={{ backgroundColor: 'var(--surface-card)' }}>
                                 <div className="p-4">
                                     <div className="flex align-items-center mb-4">
                                         <i className="pi pi-calculator mr-2" style={{ color: primaryColor }}></i>
@@ -448,37 +422,31 @@ const CartPage: React.FC = () => {
                                             Resumen del pedido
                                         </h3>
                                     </div>
-                                    
+
                                     <div className="flex justify-content-between mb-3">
                                         <span className="text-600">Subtotal ({cartSummary.totalItems} items):</span>
                                         <span className="font-bold">{cartService.formatPrice(cartSummary.subtotal)}</span>
                                     </div>
-                                    
+
                                     <div className="flex justify-content-between mb-3">
                                         <span className="text-600">Impuestos (15%):</span>
                                         <span className="font-bold">{cartService.formatPrice(cartSummary.impuestos)}</span>
                                     </div>
-                                    
+
                                     <div className="flex justify-content-between mb-4">
                                         <span className="text-600">Envío:</span>
-                                        <span className="font-bold">
-                                            {cartSummary.envio === 0 ? (
-                                                <span style={{ color: primaryColor }}>¡Gratis!</span>
-                                            ) : (
-                                                cartService.formatPrice(cartSummary.envio)
-                                            )}
-                                        </span>
+                                        <span className="font-bold">{cartSummary.envio === 0 ? <span style={{ color: primaryColor }}>¡Gratis!</span> : cartService.formatPrice(cartSummary.envio)}</span>
                                     </div>
-                                    
+
                                     <Divider />
-                                    
+
                                     <div className="flex justify-content-between mb-4">
                                         <span className="text-xl font-bold">Total:</span>
                                         <span className="text-2xl font-bold" style={{ color: primaryColor }}>
                                             {cartService.formatPrice(cartSummary.total)}
                                         </span>
                                     </div>
-                                    
+
                                     <Button
                                         label="Proceder al pago"
                                         icon="pi pi-credit-card"
@@ -489,7 +457,7 @@ const CartPage: React.FC = () => {
                                             borderColor: primaryColor
                                         }}
                                     />
-                                    
+
                                     <Button
                                         label="Continuar comprando"
                                         icon="pi pi-shopping-bag"

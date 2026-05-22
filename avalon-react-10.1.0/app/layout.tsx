@@ -13,11 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         // Intercept standard runtime errors related to chunk loading
         const handleError = (event: ErrorEvent) => {
             const message = event.message || '';
-            if (
-                message.includes('ChunkLoadError') ||
-                message.includes('Loading chunk') ||
-                message.includes('failed to load')
-            ) {
+            if (message.includes('ChunkLoadError') || message.includes('Loading chunk') || message.includes('failed to load')) {
                 console.warn('ChunkLoadError detected by Antigravity Recovery System. Reloading page...');
                 event.preventDefault();
                 window.location.reload();
@@ -27,11 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         // Intercept unhandled promise rejections (often how chunk load failures present)
         const handleRejection = (event: PromiseRejectionEvent) => {
             const reason = event.reason;
-            if (
-                reason &&
-                (reason.name === 'ChunkLoadError' ||
-                 (reason.message && reason.message.includes('Loading chunk')))
-            ) {
+            if (reason && (reason.name === 'ChunkLoadError' || (reason.message && reason.message.includes('Loading chunk')))) {
                 console.warn('Unhandled Promise ChunkLoadError detected. Reloading page...');
                 event.preventDefault();
                 window.location.reload();
@@ -48,8 +40,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }, []);
 
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="es" suppressHydrationWarning>
             <head>
+                <meta charSet="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <link id="theme-link" href={`/theme/theme-light/purple/theme.css`} rel="stylesheet"></link>
             </head>
             <body suppressHydrationWarning>
@@ -60,4 +54,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </html>
     );
 }
-

@@ -68,6 +68,7 @@ export interface ProductoRequest {
     activo: boolean;
     categoriaId: number;
     empresaId: number;
+    emprendedorId?: number;
 }
 
 export interface ApiResponse<T> {
@@ -79,12 +80,8 @@ export interface ApiResponse<T> {
 // ================ SERVICIO PRINCIPAL ================
 class EmprendedorService {
     private readonly PRODUCTOS_URL = process.env.NEXT_PUBLIC_PRODUCTOS_API_URL || 'http://localhost:8081/api';
-    private readonly INVENTARIO_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL 
-        ? `${process.env.NEXT_PUBLIC_INVENTARIO_API_URL}/api` 
-        : 'http://localhost:8082/api';
-    private readonly VENTAS_URL = process.env.NEXT_PUBLIC_VENTAS_API_URL 
-        ? `${process.env.NEXT_PUBLIC_VENTAS_API_URL}/api` 
-        : 'http://localhost:8083/api';
+    private readonly INVENTARIO_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL ? `${process.env.NEXT_PUBLIC_INVENTARIO_API_URL}/api` : 'http://localhost:8082/api';
+    private readonly VENTAS_URL = process.env.NEXT_PUBLIC_VENTAS_API_URL ? `${process.env.NEXT_PUBLIC_VENTAS_API_URL}/api` : 'http://localhost:8083/api';
 
     /**
      * ✅ ACTUALIZAR STOCK EN SEGUNDO PLANO - VERSIÓN BATCH OPTIMIZADA
@@ -92,40 +89,41 @@ class EmprendedorService {
     private async actualizarStockEnSegundoPlano(productos: ProductoEmprendedor[]) {
         try {
             console.log(`🔄 Actualizando stock para ${productos.length} productos usando método batch...`);
-            
+
             // Obtener todos los IDs de productos
-            const productosIds = productos.map(p => p.id);
-            
+            const productosIds = productos.map((p) => p.id);
+
             // 🚀 USAR EL NUEVO MÉTODO BATCH DE INVENTARIO SERVICE
             const stockBatch = await inventarioService.obtenerStockBatch(productosIds);
-            
+
             // Actualizar cada producto con su stock
-            productos.forEach(producto => {
+            productos.forEach((producto) => {
                 const stock = stockBatch[producto.id.toString()] || 0;
-                
+
                 if (producto.inventario) {
                     const stockAnterior = producto.inventario.cantidad;
                     producto.inventario.cantidad = stock;
                     producto.inventario.ubicacion = stock > 0 ? 'Disponible' : 'No disponible';
-                    
+
                     if (stockAnterior !== stock) {
                         console.log(`📦 Stock actualizado para ${producto.nombre}: ${stockAnterior} → ${stock}`);
                     }
-                    
+
                     // Emitir evento para actualizar UI
-                    window.dispatchEvent(new CustomEvent('stockUpdatedEmprendedor', {
-                        detail: { productoId: producto.id, stock, producto }
-                    }));
+                    window.dispatchEvent(
+                        new CustomEvent('stockUpdatedEmprendedor', {
+                            detail: { productoId: producto.id, stock, producto }
+                        })
+                    );
                 }
             });
-            
+
             console.log('✅ Actualización batch completada exitosamente');
-            
         } catch (error) {
             console.log('⚠️ Error actualizando stock batch:', error);
-            
+
             // Si falla el batch, mantener el stock que viene del servidor
-            productos.forEach(producto => {
+            productos.forEach((producto) => {
                 if (producto.inventario && producto.inventario.cantidad === undefined) {
                     producto.inventario.cantidad = 0;
                     producto.inventario.ubicacion = 'No disponible';
@@ -287,7 +285,7 @@ class EmprendedorService {
             } else {
                 const errorText = await response.text();
                 return {
-                    success: false, 
+                    success: false,
                     message: `Error eliminando categoría: ${errorText}`
                 };
             }
@@ -466,7 +464,7 @@ class EmprendedorService {
     async obtenerProductosEmprendedor(): Promise<ApiResponse<ProductoEmprendedor[]>> {
         try {
             console.log('🚀 Obteniendo productos para emprendedor...');
-            
+
             // ✅ USAR EL ENDPOINT OPTIMIZADO PRIMERO
             try {
                 const response = await fetch(`${this.PRODUCTOS_URL}/productos/listado`, {
@@ -481,14 +479,14 @@ class EmprendedorService {
                 if (response.ok) {
                     const productosDto = await response.json();
                     console.log(`✅ Endpoint optimizado funcionó: ${productosDto.length} productos`);
-                    
+
                     // ✅ CONVERTIR A FORMATO EMPRENDEDOR
                     const productosEmprendedor: ProductoEmprendedor[] = productosDto.map((dto: any) => ({
                         id: dto.id,
                         nombre: dto.nombre,
                         descripcion: dto.descripcion,
                         precio: dto.precio,
-                        imagen: dto.imagen || 'https://via.placeholder.com/400x290?text=Producto',
+                        imagen: dto.imagen || '/demo/images/product/product-placeholder.svg',
                         activo: true, // Por defecto activo
                         categoria: {
                             id: 0,
@@ -548,7 +546,7 @@ class EmprendedorService {
             if (response.ok) {
                 const productos = await response.json();
                 console.log(`✅ Endpoint básico funcionó: ${productos.length} productos`);
-                
+
                 // ✅ CONVERTIR FORMATO BÁSICO A EMPRENDEDOR
                 const productosEmprendedor: ProductoEmprendedor[] = productos.map((producto: any) => ({
                     id: producto.id,
@@ -576,15 +574,17 @@ class EmprendedorService {
                         fechaCreacion: producto.empresa?.fechaCreacion || '',
                         fechaActualizacion: producto.empresa?.fechaActualizacion || ''
                     },
-                    inventario: producto.inventario ? {
-                        id: producto.inventario.id,
-                        cantidad: producto.inventario.cantidad || 0,
-                        ubicacion: producto.inventario.ubicacion || 'Sin ubicación'
-                    } : {
-                        id: 0,
-                        cantidad: 0,
-                        ubicacion: 'Sin stock'
-                    },
+                    inventario: producto.inventario
+                        ? {
+                              id: producto.inventario.id,
+                              cantidad: producto.inventario.cantidad || 0,
+                              ubicacion: producto.inventario.ubicacion || 'Sin ubicación'
+                          }
+                        : {
+                              id: 0,
+                              cantidad: 0,
+                              ubicacion: 'Sin stock'
+                          },
                     fechaCreacion: producto.fechaCreacion || '',
                     fechaActualizacion: producto.fechaActualizacion || ''
                 }));
@@ -647,13 +647,17 @@ class EmprendedorService {
 
     async crearProducto(producto: ProductoRequest): Promise<ApiResponse<ProductoEmprendedor>> {
         try {
+            const userInfo = authService.getUserInfo();
+            const emprendedorId = producto.emprendedorId ?? userInfo?.empresaId ?? producto.empresaId;
+            const payload = { ...producto, emprendedorId };
+
             const response = await fetch(`${this.PRODUCTOS_URL}/productos`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     ...authService.getAuthHeaders()
                 },
-                body: JSON.stringify(producto)
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
@@ -680,13 +684,17 @@ class EmprendedorService {
 
     async actualizarProducto(id: number, producto: ProductoRequest): Promise<ApiResponse<ProductoEmprendedor>> {
         try {
+            const userInfo = authService.getUserInfo();
+            const emprendedorId = producto.emprendedorId ?? userInfo?.empresaId ?? producto.empresaId;
+            const payload = { ...producto, emprendedorId };
+
             const response = await fetch(`${this.PRODUCTOS_URL}/productos/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     ...authService.getAuthHeaders()
                 },
-                body: JSON.stringify(producto)
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
@@ -764,7 +772,7 @@ class EmprendedorService {
         if (typeof estado === 'boolean') {
             return estado ? 'success' : 'danger';
         }
-        
+
         switch (estado.toLowerCase()) {
             case 'completada':
             case 'activo':

@@ -38,7 +38,7 @@ const ProductosPage: React.FC = () => {
             if (!fecha) return 'Fecha no disponible';
             const date = new Date(fecha);
             if (isNaN(date.getTime())) return 'Fecha inválida';
-            
+
             return date.toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'short',
@@ -55,32 +55,32 @@ const ProductosPage: React.FC = () => {
     // Cargar datos iniciales
     useEffect(() => {
         cargarDatos();
-        
+
         // ✅ ESCUCHAR EVENTOS DE ACTUALIZACIÓN DE STOCK
         const handleStockUpdate = (event: CustomEvent) => {
             const { productoId, stock } = event.detail;
-            
-            const updateProducts = (prevProductos: ProductoEmprendedor[]) => 
-                prevProductos.map(producto => 
-                    producto.id === productoId 
+
+            const updateProducts = (prevProductos: ProductoEmprendedor[]) =>
+                prevProductos.map((producto) =>
+                    producto.id === productoId
                         ? {
-                            ...producto,
-                            inventario: {
-                                ...producto.inventario,
-                                id: producto.inventario?.id || 0,
-                                cantidad: stock,
-                                ubicacion: stock > 0 ? 'Disponible' : 'No disponible'
-                            }
-                        }
+                              ...producto,
+                              inventario: {
+                                  ...producto.inventario,
+                                  id: producto.inventario?.id || 0,
+                                  cantidad: stock,
+                                  ubicacion: stock > 0 ? 'Disponible' : 'No disponible'
+                              }
+                          }
                         : producto
                 );
-            
+
             setProductos(updateProducts);
             setProductosFiltrados(updateProducts);
         };
 
         window.addEventListener('stockUpdatedEmprendedor', handleStockUpdate as EventListener);
-        
+
         return () => {
             window.removeEventListener('stockUpdatedEmprendedor', handleStockUpdate as EventListener);
         };
@@ -92,15 +92,11 @@ const ProductosPage: React.FC = () => {
             console.log('🔄 Cargando datos del panel de emprendedor...');
 
             // Cargar productos, categorías y empresas en paralelo
-            const [productosRes, categoriasRes, empresasRes] = await Promise.all([
-                emprendedorService.obtenerProductosEmprendedor(),
-                emprendedorService.obtenerCategorias(),
-                emprendedorService.obtenerEmpresas()
-            ]);
+            const [productosRes, categoriasRes, empresasRes] = await Promise.all([emprendedorService.obtenerProductosEmprendedor(), emprendedorService.obtenerCategorias(), emprendedorService.obtenerEmpresas()]);
 
             if (productosRes.success && productosRes.data) {
                 // ✅ NORMALIZAR DATOS para evitar valores null/undefined
-                const productosNormalizados = productosRes.data.map(producto => ({
+                const productosNormalizados = productosRes.data.map((producto) => ({
                     ...producto,
                     nombre: producto.nombre || '',
                     descripcion: producto.descripcion || '',
@@ -114,7 +110,7 @@ const ProductosPage: React.FC = () => {
                     },
                     inventario: producto.inventario || { id: 0, cantidad: 0, ubicacion: 'Sin stock' }
                 }));
-                
+
                 setProductos(productosNormalizados);
                 setProductosFiltrados(productosNormalizados);
                 console.log('✅ Productos cargados:', productosNormalizados.length);
@@ -134,7 +130,6 @@ const ProductosPage: React.FC = () => {
             if (empresasRes.success && empresasRes.data) {
                 setEmpresas(empresasRes.data);
             }
-
         } catch (error) {
             console.error('❌ Error cargando datos:', error);
             toast.current?.show({
@@ -152,19 +147,16 @@ const ProductosPage: React.FC = () => {
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.toLowerCase();
         setSearchTerm(value);
-        
+
         if (!value.trim()) {
             setProductosFiltrados(productos);
             return;
         }
-        
-        const filtered = productos.filter(producto => 
-            producto.nombre?.toLowerCase().includes(value) ||
-            producto.descripcion?.toLowerCase().includes(value) ||
-            producto.categoria?.nombre?.toLowerCase().includes(value) ||
-            producto.empresa?.nombre?.toLowerCase().includes(value)
+
+        const filtered = productos.filter(
+            (producto) => producto.nombre?.toLowerCase().includes(value) || producto.descripcion?.toLowerCase().includes(value) || producto.categoria?.nombre?.toLowerCase().includes(value) || producto.empresa?.nombre?.toLowerCase().includes(value)
         );
-        
+
         setProductosFiltrados(filtered);
     };
 
@@ -185,9 +177,9 @@ const ProductosPage: React.FC = () => {
     const eliminarProducto = async (id: number) => {
         try {
             const response = await emprendedorService.eliminarProducto(id);
-            
+
             if (response.success) {
-                const updatedProducts = productos.filter(p => p.id !== id);
+                const updatedProducts = productos.filter((p) => p.id !== id);
                 setProductos(updatedProducts);
                 setProductosFiltrados(updatedProducts);
                 toast.current?.show({
@@ -224,42 +216,26 @@ const ProductosPage: React.FC = () => {
     const imageBodyTemplate = (rowData: ProductoEmprendedor) => {
         return (
             <div className="flex align-items-center justify-content-center">
-                <Image 
-                    src={rowData.imagen || 'https://via.placeholder.com/60x60?text=Producto'} 
-                    alt={rowData.nombre}
-                    width="60" 
-                    height="60"
-                    className="border-round-lg shadow-2"
-                    preview
-                />
+                <Image src={rowData.imagen || '/demo/images/product/product-placeholder.svg'} alt={rowData.nombre} width="60" height="60" className="border-round-lg shadow-2" preview />
             </div>
         );
     };
 
     const priceBodyTemplate = (rowData: ProductoEmprendedor) => {
-        return (
-            <span className="font-bold text-primary">
-                {emprendedorService.formatearPrecio(rowData.precio)}
-            </span>
-        );
+        return <span className="font-bold text-primary">{emprendedorService.formatearPrecio(rowData.precio)}</span>;
     };
 
     const statusBodyTemplate = (rowData: ProductoEmprendedor) => {
-        return (
-            <Badge 
-                value={rowData.activo ? 'Activo' : 'Inactivo'} 
-                severity={rowData.activo ? 'success' : 'danger'}
-            />
-        );
+        return <Badge value={rowData.activo ? 'Activo' : 'Inactivo'} severity={rowData.activo ? 'success' : 'danger'} />;
     };
 
     const stockBodyTemplate = (rowData: ProductoEmprendedor) => {
         const cantidad = rowData.inventario?.cantidad || 0;
-        let severity: "success" | "warning" | "danger" = 'success';
-        
+        let severity: 'success' | 'warning' | 'danger' = 'success';
+
         if (cantidad === 0) severity = 'danger';
         else if (cantidad <= 5) severity = 'warning';
-        
+
         return (
             <div className="flex align-items-center gap-2">
                 <Badge value={cantidad.toString()} severity={severity} />
@@ -271,24 +247,9 @@ const ProductosPage: React.FC = () => {
     const actionBodyTemplate = (rowData: ProductoEmprendedor) => {
         return (
             <div className="flex gap-2">
-                <Button 
-                    icon="pi pi-eye" 
-                    className="p-button-rounded p-button-info p-button-sm" 
-                    onClick={() => verDetalles(rowData)}
-                    tooltip="Ver detalles"
-                />
-                <Button 
-                    icon="pi pi-pencil" 
-                    className="p-button-rounded p-button-success p-button-sm" 
-                    onClick={() => router.push(`/emprendedor/productos/${rowData.id}/editar`)}
-                    tooltip="Editar"
-                />
-                <Button 
-                    icon="pi pi-trash" 
-                    className="p-button-rounded p-button-danger p-button-sm" 
-                    onClick={() => confirmarEliminacion(rowData)}
-                    tooltip="Eliminar"
-                />
+                <Button icon="pi pi-eye" className="p-button-rounded p-button-info p-button-sm" onClick={() => verDetalles(rowData)} tooltip="Ver detalles" />
+                <Button icon="pi pi-pencil" className="p-button-rounded p-button-success p-button-sm" onClick={() => router.push(`/emprendedor/productos/${rowData.id}/editar`)} tooltip="Editar" />
+                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger p-button-sm" onClick={() => confirmarEliminacion(rowData)} tooltip="Eliminar" />
             </div>
         );
     };
@@ -297,18 +258,8 @@ const ProductosPage: React.FC = () => {
     const leftToolbarTemplate = () => {
         return (
             <div className="flex align-items-center gap-2">
-                <Button 
-                    label="Nuevo Producto" 
-                    icon="pi pi-plus" 
-                    className="p-button-success"
-                    onClick={() => router.push('/emprendedor/productos/crear')}
-                />
-                <Button 
-                    label="Actualizar" 
-                    icon="pi pi-refresh" 
-                    className="p-button-outlined"
-                    onClick={cargarDatos}
-                />
+                <Button label="Nuevo Producto" icon="pi pi-plus" className="p-button-success" onClick={() => router.push('/emprendedor/productos/crear')} />
+                <Button label="Actualizar" icon="pi pi-refresh" className="p-button-outlined" onClick={cargarDatos} />
             </div>
         );
     };
@@ -318,12 +269,7 @@ const ProductosPage: React.FC = () => {
             <div className="flex align-items-center gap-2">
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" />
-                    <InputText 
-                        value={searchTerm} 
-                        onChange={handleSearch}
-                        placeholder="Buscar productos..." 
-                        className="w-20rem"
-                    />
+                    <InputText value={searchTerm} onChange={handleSearch} placeholder="Buscar productos..." className="w-20rem" />
                 </span>
             </div>
         );
@@ -351,23 +297,17 @@ const ProductosPage: React.FC = () => {
                     <i className="pi pi-box text-primary mr-3"></i>
                     Gestión de Productos
                 </h1>
-                <p className="text-600 text-lg">
-                    Administra el catálogo de productos de tu negocio
-                </p>
+                <p className="text-600 text-lg">Administra el catálogo de productos de tu negocio</p>
             </div>
 
             {/* Contenido principal */}
             <Card>
-                <Toolbar 
-                    className="mb-4" 
-                    left={leftToolbarTemplate} 
-                    right={rightToolbarTemplate}
-                />
+                <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate} />
 
                 {loading ? (
                     renderSkeleton()
                 ) : (
-                    <DataTable 
+                    <DataTable
                         value={productosFiltrados}
                         paginator
                         rows={10}
@@ -378,98 +318,41 @@ const ProductosPage: React.FC = () => {
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos"
                     >
-                        <Column 
-                            field="imagen" 
-                            header="Imagen" 
-                            body={imageBodyTemplate} 
-                            style={{ width: '100px' }}
-                            sortable={false}
-                        />
-                        <Column 
-                            field="nombre" 
-                            header="Nombre" 
-                            sortable 
-                            className="font-bold"
-                        />
-                        <Column 
-                            field="categoria.nombre" 
-                            header="Categoría" 
-                            sortable
-                        />
-                        <Column 
-                            field="empresa.nombre" 
-                            header="Empresa" 
-                            sortable
-                        />
-                        <Column 
-                            field="precio" 
-                            header="Precio" 
-                            body={priceBodyTemplate} 
-                            sortable
-                        />
-                        <Column 
-                            field="inventario.cantidad" 
-                            header="Stock" 
-                            body={stockBodyTemplate}
-                            sortable
-                        />
-                        <Column 
-                            field="activo" 
-                            header="Estado" 
-                            body={statusBodyTemplate} 
-                            sortable
-                        />
-                        <Column 
-                            body={actionBodyTemplate} 
-                            header="Acciones"
-                            style={{ width: '150px' }}
-                            sortable={false}
-                        />
+                        <Column field="imagen" header="Imagen" body={imageBodyTemplate} style={{ width: '100px' }} sortable={false} />
+                        <Column field="nombre" header="Nombre" sortable className="font-bold" />
+                        <Column field="categoria.nombre" header="Categoría" sortable />
+                        <Column field="empresa.nombre" header="Empresa" sortable />
+                        <Column field="precio" header="Precio" body={priceBodyTemplate} sortable />
+                        <Column field="inventario.cantidad" header="Stock" body={stockBodyTemplate} sortable />
+                        <Column field="activo" header="Estado" body={statusBodyTemplate} sortable />
+                        <Column body={actionBodyTemplate} header="Acciones" style={{ width: '150px' }} sortable={false} />
                     </DataTable>
                 )}
             </Card>
 
             {/* Modal de detalles del producto */}
-            <Dialog
-                header="Detalles del Producto"
-                visible={productDetailVisible}
-                style={{ width: '600px' }}
-                modal
-                onHide={() => setProductDetailVisible(false)}
-            >
+            <Dialog header="Detalles del Producto" visible={productDetailVisible} style={{ width: '600px' }} modal onHide={() => setProductDetailVisible(false)}>
                 {selectedProducto && (
                     <div className="grid">
                         <div className="col-12 md:col-4">
-                            <Image
-                                src={selectedProducto.imagen || 'https://via.placeholder.com/300x300?text=Producto'}
-                                alt={selectedProducto.nombre}
-                                width="100%"
-                                className="border-round-lg shadow-2"
-                                preview
-                            />
+                            <Image src={selectedProducto.imagen || '/demo/images/product/product-placeholder.svg'} alt={selectedProducto.nombre} width="100%" className="border-round-lg shadow-2" preview />
                         </div>
                         <div className="col-12 md:col-8">
-                            <h3 className="text-2xl font-bold text-900 mb-3">
-                                {selectedProducto.nombre}
-                            </h3>
-                            
+                            <h3 className="text-2xl font-bold text-900 mb-3">{selectedProducto.nombre}</h3>
+
                             <div className="mb-3">
                                 <strong>Descripción:</strong>
                                 <p className="mt-1 text-600">{selectedProducto.descripcion}</p>
                             </div>
-                            
+
                             <div className="grid">
                                 <div className="col-6">
                                     <strong>Precio:</strong>
-                                    <div className="text-primary font-bold text-xl">
-                                        {emprendedorService.formatearPrecio(selectedProducto.precio)}
-                                    </div>
+                                    <div className="text-primary font-bold text-xl">{emprendedorService.formatearPrecio(selectedProducto.precio)}</div>
                                 </div>
                                 <div className="col-6">
                                     <strong>Stock:</strong>
-                                    <div className="font-bold">
-                                        {selectedProducto.inventario?.cantidad || 0} unidades
-                                    </div>
+                                    <div className="font-bold">{selectedProducto.inventario?.cantidad || 0} unidades</div>
                                 </div>
                                 <div className="col-6">
                                     <strong>Categoría:</strong>
@@ -482,17 +365,12 @@ const ProductosPage: React.FC = () => {
                                 <div className="col-6">
                                     <strong>Estado:</strong>
                                     <div>
-                                        <Badge 
-                                            value={selectedProducto.activo ? 'Activo' : 'Inactivo'} 
-                                            severity={selectedProducto.activo ? 'success' : 'danger'}
-                                        />
+                                        <Badge value={selectedProducto.activo ? 'Activo' : 'Inactivo'} severity={selectedProducto.activo ? 'success' : 'danger'} />
                                     </div>
                                 </div>
                                 <div className="col-6">
                                     <strong>Creado:</strong>
-                                    <div className="text-600">
-                                        {formatearFecha(selectedProducto.fechaCreacion)}
-                                    </div>
+                                    <div className="text-600">{formatearFecha(selectedProducto.fechaCreacion)}</div>
                                 </div>
                             </div>
                         </div>

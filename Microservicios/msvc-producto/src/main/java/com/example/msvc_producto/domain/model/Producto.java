@@ -14,6 +14,7 @@
         private LocalDateTime fechaActualizacion;
         private Empresa empresa; // Relación con Empresa
         private Categoria categoria; // Relación con Categoría
+        private Long emprendedorId;
 
         // Constructor vacío
         public Producto() {
@@ -23,7 +24,7 @@
         public Producto(Long id, String nombre, String descripcion, BigDecimal precio,
                         String imagen, Boolean activo,
                         LocalDateTime fechaCreacion, LocalDateTime fechaActualizacion,
-                        Empresa empresa, Categoria categoria) {
+                        Empresa empresa, Categoria categoria, Long emprendedorId) {
             this.id = id;
             this.nombre = nombre;
             this.descripcion = descripcion;
@@ -34,6 +35,7 @@
             this.fechaActualizacion = fechaActualizacion;
             this.empresa = empresa;
             this.categoria = categoria;
+            this.emprendedorId = emprendedorId;
         }
 
         // Getters y setters (eliminados los de stock)
@@ -115,5 +117,13 @@
 
         public void setCategoria(Categoria categoria) {
             this.categoria = categoria;
+        }
+
+        public Long getEmprendedorId() {
+            return emprendedorId;
+        }
+
+        public void setEmprendedorId(Long emprendedorId) {
+            this.emprendedorId = emprendedorId;
         }
     }
