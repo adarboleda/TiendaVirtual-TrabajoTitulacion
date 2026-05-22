@@ -40,28 +40,26 @@ interface UsuarioInfo {
 class AuthService {
     private readonly TOKEN_KEY = 'auth_token';
     private readonly USER_KEY = 'user_info';
-    private readonly API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL 
-        ? `${process.env.NEXT_PUBLIC_AUTH_API_URL}/api/auth` 
-        : 'http://localhost:8084/api/auth';
+    private readonly API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL ? `${process.env.NEXT_PUBLIC_AUTH_API_URL}/api/auth` : 'http://localhost:8084/api/auth';
 
     async login(username: string, password: string): Promise<LoginResponse> {
         try {
             const loginRequest: LoginRequest = { username, password };
-            
+
             const response = await fetch(`${this.API_URL}/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(loginRequest),
+                body: JSON.stringify(loginRequest)
             });
 
             if (response.ok) {
                 const data: TokenResponseDto = await response.json();
-                
+
                 // Guardar token
                 this.setToken(data.accessToken);
-                
+
                 // Procesar información del usuario desde la respuesta
                 if (data.usuario) {
                     const userInfo: UsuarioInfo = {
@@ -73,7 +71,7 @@ class AuthService {
                         rol: this.extractPrimaryRole(data.usuario.roles || []),
                         empresaId: data.usuario.empresaId // ✅ AGREGAR empresaId
                     };
-                    
+
                     this.setUserInfo(userInfo);
                 } else {
                     console.warn('⚠️ No se recibió información del usuario en la respuesta');
@@ -83,14 +81,14 @@ class AuthService {
                     };
                     this.setUserInfo(basicUserInfo);
                 }
-                
+
                 return {
                     success: true,
                     data: data
                 };
             } else {
                 let errorMessage = 'Credenciales incorrectas';
-                
+
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.message || errorMessage;
@@ -103,7 +101,7 @@ class AuthService {
                         errorMessage = `Error ${response.status}: ${response.statusText}`;
                     }
                 }
-                
+
                 return {
                     success: false,
                     message: errorMessage
@@ -121,7 +119,7 @@ class AuthService {
     // ✅ CORREGIDO: Usar ROLE_EMP como está en la BD
     private extractPrimaryRole(roles: string[]): string {
         console.log('🔍 Roles recibidos del backend:', roles);
-        
+
         if (roles.includes('ROLE_ADMIN')) {
             return 'ROLE_ADMIN';
         }
@@ -132,7 +130,7 @@ class AuthService {
         if (roles.includes('ROLE_USER')) {
             return 'ROLE_USER';
         }
-        
+
         return 'ROLE_USER'; // Por defecto
     }
 
@@ -141,9 +139,9 @@ class AuthService {
             const response = await fetch(`${this.API_URL}/registro`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(userData),
+                body: JSON.stringify(userData)
             });
 
             return await response.json();
@@ -177,17 +175,47 @@ class AuthService {
         if (typeof window !== 'undefined') {
             const userInfo = localStorage.getItem(this.USER_KEY);
             const parsed = userInfo ? JSON.parse(userInfo) : null;
+
+            if (parsed && !parsed.empresaId) {
+                const token = this.getToken();
+                const payload = token ? this.decodeJwtPayload(token) : null;
+                const empresaId = payload?.empresaId;
+
+                if (empresaId) {
+                    const updated = { ...parsed, empresaId };
+                    this.setUserInfo(updated);
+                    return updated;
+                }
+            }
+
             return parsed;
         }
         return null;
     }
 
+    private decodeJwtPayload(token: string): any | null {
+        try {
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                return null;
+            }
+
+            const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+            const json = atob(padded);
+            return JSON.parse(json);
+        } catch (error) {
+            console.error('Error decodificando token:', error);
+            return null;
+        }
+    }
+
     isAuthenticated(): boolean {
         const token = this.getToken();
         const userInfo = this.getUserInfo();
-        
+
         const isAuth = !!(token && userInfo);
-        
+
         if (!isAuth) {
             return false;
         }
@@ -198,7 +226,7 @@ class AuthService {
             if (parts.length === 3) {
                 const payload = JSON.parse(atob(parts[1]));
                 const currentTime = Date.now() / 1000;
-                
+
                 if (payload.exp && payload.exp < currentTime) {
                     console.log('🔓 Token expirado, limpiando sesión');
                     // ✅ CORREGIDO: Solo limpiar, sin redirección automática
@@ -206,7 +234,7 @@ class AuthService {
                     return false;
                 }
             }
-            
+
             return true;
         } catch (error) {
             console.error('Error verificando token:', error);
@@ -243,9 +271,9 @@ class AuthService {
         if (!userInfo) {
             return 'customer';
         }
-        
+
         let userType: 'customer' | 'employee' | 'admin';
-        
+
         if (userInfo.rol === 'ROLE_ADMIN') {
             userType = 'admin';
         } else if (userInfo.rol === 'ROLE_EMP') {
@@ -253,14 +281,14 @@ class AuthService {
         } else {
             userType = 'customer';
         }
-        
+
         console.log('👤 Tipo de usuario determinado:', userType, 'para rol:', userInfo.rol);
         return userType;
     }
 
     getRedirectPath(): string {
         const userType = this.getUserType();
-        
+
         let redirectPath: string;
         switch (userType) {
             case 'admin':
@@ -274,7 +302,7 @@ class AuthService {
                 redirectPath = '/landing';
                 break;
         }
-        
+
         console.log('🔀 Ruta de redirección:', redirectPath);
         return redirectPath;
     }
@@ -285,7 +313,7 @@ class AuthService {
             localStorage.removeItem(this.TOKEN_KEY);
             localStorage.removeItem(this.USER_KEY);
             console.log('🔓 Sesión cerrada');
-            
+
             // ✅ CORREGIDO: Redirigir al login morado correcto
             window.location.href = '/auth/login2';
         }
@@ -309,14 +337,14 @@ class AuthService {
         const token = this.getToken();
         return {
             'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` })
         };
     }
 
     async testConnection(): Promise<boolean> {
         try {
             const response = await fetch(`${this.API_URL}/login`, {
-                method: 'OPTIONS',
+                method: 'OPTIONS'
             });
             return response.ok;
         } catch (error) {

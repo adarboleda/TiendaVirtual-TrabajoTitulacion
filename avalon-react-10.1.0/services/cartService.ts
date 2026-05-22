@@ -79,7 +79,7 @@ class CartService {
     private readonly CART_KEY = 'ecommerce_cart';
     private readonly TAX_RATE = 0.15;
     private readonly FREE_SHIPPING_THRESHOLD = 50; // Envío gratis sobre $50
-    private readonly SHIPPING_COST = 5.99;
+    private readonly SHIPPING_COST = 0;
     private readonly API_BASE_URL = process.env.NEXT_PUBLIC_VENTAS_API_URL || 'http://localhost:8083';
 
     // ===================== MÉTODOS DEL CARRITO =====================
