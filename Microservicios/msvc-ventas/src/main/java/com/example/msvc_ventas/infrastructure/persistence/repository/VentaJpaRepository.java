@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface VentaJpaRepository extends JpaRepository<VentaEntity, Long> {
     Optional<VentaEntity> findByNumeroFactura(String numeroFactura);
     List<VentaEntity> findByClienteId(Long clienteId);
+    List<VentaEntity> findByEmprendedorId(Long emprendedorId);
 }

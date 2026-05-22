@@ -13,6 +13,7 @@ import { Toolbar } from 'primereact/toolbar';
 import { InputText } from 'primereact/inputtext';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import ventasService, { VentaResponse } from '../../../../services/ventasService';
+import authService from '../../../../services/authService';
 
 const VentasPage: React.FC = () => {
     const router = useRouter();
@@ -35,8 +36,24 @@ const VentasPage: React.FC = () => {
     const cargarVentas = async () => {
         setLoading(true);
         try {
-            console.log('🔄 Cargando ventas...');
-            const response = await ventasService.listarVentas();
+            const userInfo = authService.getUserInfo();
+            const emprendedorId = userInfo?.empresaId;
+
+            if (!emprendedorId) {
+                console.warn('⚠️ No se encontró empresaId del emprendedor');
+                setVentas([]);
+                setVentasFiltradas([]);
+                toast.current?.show({
+                    severity: 'warn',
+                    summary: 'Atención',
+                    detail: 'No se pudo identificar tu empresa para filtrar ventas',
+                    life: 4000
+                });
+                return;
+            }
+
+            console.log('🔄 Cargando ventas para emprendedor:', emprendedorId);
+            const response = await ventasService.listarVentasPorEmprendedor(emprendedorId);
 
             if (response.success && response.data) {
                 console.log('✅ Ventas cargadas:', response.data);
@@ -68,20 +85,21 @@ const VentasPage: React.FC = () => {
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.toLowerCase();
         setSearchTerm(value);
-        
+
         if (!value.trim()) {
             setVentasFiltradas(ventas);
             return;
         }
-        
-        const filtered = ventas.filter(venta => 
-            venta.numeroFactura?.toLowerCase().includes(value) ||
-            venta.cliente?.nombre?.toLowerCase().includes(value) ||
-            venta.cliente?.apellido?.toLowerCase().includes(value) ||
-            venta.cliente?.email?.toLowerCase().includes(value) ||
-            ventasService.formatearEstado(venta.estado)?.toLowerCase().includes(value)
+
+        const filtered = ventas.filter(
+            (venta) =>
+                venta.numeroFactura?.toLowerCase().includes(value) ||
+                venta.cliente?.nombre?.toLowerCase().includes(value) ||
+                venta.cliente?.apellido?.toLowerCase().includes(value) ||
+                venta.cliente?.email?.toLowerCase().includes(value) ||
+                ventasService.formatearEstado(venta.estado)?.toLowerCase().includes(value)
         );
-        
+
         setVentasFiltradas(filtered);
     };
 
@@ -97,12 +115,12 @@ const VentasPage: React.FC = () => {
             return;
         }
 
-        setProcessingIds(prev => new Set(prev).add(venta.id));
+        setProcessingIds((prev) => new Set(prev).add(venta.id));
 
         try {
             console.log('✅ Intentando completar venta:', venta.id);
             const response = await ventasService.completarVenta(venta.id);
-            
+
             if (response.success) {
                 toast.current?.show({
                     severity: 'success',
@@ -129,7 +147,7 @@ const VentasPage: React.FC = () => {
                 life: 5000
             });
         } finally {
-            setProcessingIds(prev => {
+            setProcessingIds((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(venta.id);
                 return newSet;
@@ -162,12 +180,12 @@ const VentasPage: React.FC = () => {
 
     // Cancelar venta con manejo de errores mejorado
     const cancelarVenta = async (venta: VentaResponse) => {
-        setProcessingIds(prev => new Set(prev).add(venta.id));
+        setProcessingIds((prev) => new Set(prev).add(venta.id));
 
         try {
             console.log('❌ Intentando cancelar venta:', venta.id);
             const response = await ventasService.cancelarVenta(venta.id);
-            
+
             if (response.success) {
                 toast.current?.show({
                     severity: 'success',
@@ -194,7 +212,7 @@ const VentasPage: React.FC = () => {
                 life: 5000
             });
         } finally {
-            setProcessingIds(prev => {
+            setProcessingIds((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(venta.id);
                 return newSet;
@@ -214,28 +232,23 @@ const VentasPage: React.FC = () => {
     const clienteBodyTemplate = (rowData: VentaResponse) => {
         return (
             <div>
-                <div className="font-bold">{rowData.cliente.nombre} {rowData.cliente.apellido}</div>
+                <div className="font-bold">
+                    {rowData.cliente.nombre} {rowData.cliente.apellido}
+                </div>
                 <div className="text-sm text-600">{rowData.cliente.email}</div>
             </div>
         );
     };
 
     const totalBodyTemplate = (rowData: VentaResponse) => {
-        return (
-            <span className="font-bold text-xl">
-                {ventasService.formatearPrecio(rowData.total)}
-            </span>
-        );
+        return <span className="font-bold text-xl">{ventasService.formatearPrecio(rowData.total)}</span>;
     };
 
     const estadoBodyTemplate = (rowData: VentaResponse) => {
         return (
             <div className="flex align-items-center gap-2">
                 <i className={ventasService.obtenerIconoEstado(rowData.estado)}></i>
-                <Badge 
-                    value={ventasService.formatearEstado(rowData.estado)} 
-                    severity={ventasService.obtenerColorEstado(rowData.estado)}
-                />
+                <Badge value={ventasService.formatearEstado(rowData.estado)} severity={ventasService.obtenerColorEstado(rowData.estado)} />
             </div>
         );
     };
@@ -251,32 +264,14 @@ const VentasPage: React.FC = () => {
 
         return (
             <div className="flex gap-2">
-                <Button 
-                    icon="pi pi-eye" 
-                    className="p-button-rounded p-button-info p-button-sm" 
-                    onClick={() => router.push(`/emprendedor/ventas/${rowData.id}`)}
-                    tooltip="Ver detalles"
-                    disabled={isProcessing}
-                />
-                
+                <Button icon="pi pi-eye" className="p-button-rounded p-button-info p-button-sm" onClick={() => router.push(`/emprendedor/ventas/${rowData.id}`)} tooltip="Ver detalles" disabled={isProcessing} />
+
                 {puedeCompletar && (
-                    <Button 
-                        icon={isProcessing ? "pi pi-spin pi-spinner" : "pi pi-check"}
-                        className="p-button-rounded p-button-success p-button-sm" 
-                        onClick={() => completarVenta(rowData)}
-                        tooltip="Completar venta"
-                        disabled={isProcessing}
-                    />
+                    <Button icon={isProcessing ? 'pi pi-spin pi-spinner' : 'pi pi-check'} className="p-button-rounded p-button-success p-button-sm" onClick={() => completarVenta(rowData)} tooltip="Completar venta" disabled={isProcessing} />
                 )}
-                
+
                 {puedeCancelar && (
-                    <Button 
-                        icon={isProcessing ? "pi pi-spin pi-spinner" : "pi pi-times"}
-                        className="p-button-rounded p-button-danger p-button-sm" 
-                        onClick={() => confirmarCancelacion(rowData)}
-                        tooltip="Cancelar venta"
-                        disabled={isProcessing}
-                    />
+                    <Button icon={isProcessing ? 'pi pi-spin pi-spinner' : 'pi pi-times'} className="p-button-rounded p-button-danger p-button-sm" onClick={() => confirmarCancelacion(rowData)} tooltip="Cancelar venta" disabled={isProcessing} />
                 )}
             </div>
         );
@@ -286,9 +281,9 @@ const VentasPage: React.FC = () => {
     const leftToolbarTemplate = () => {
         return (
             <div className="flex align-items-center gap-2">
-                <Button 
-                    label="Actualizar" 
-                    icon="pi pi-refresh" 
+                <Button
+                    label="Actualizar"
+                    icon="pi pi-refresh"
                     className="p-button-outlined"
                     onClick={cargarVentas}
                     disabled={loading}
@@ -297,16 +292,18 @@ const VentasPage: React.FC = () => {
                         color: primaryColor
                     }}
                 />
-                <Button 
-                    label="Exportar" 
-                    icon="pi pi-download" 
+                <Button
+                    label="Exportar"
+                    icon="pi pi-download"
                     className="p-button-help"
-                    onClick={() => toast.current?.show({
-                        severity: 'info',
-                        summary: 'En desarrollo',
-                        detail: 'Función de exportación próximamente',
-                        life: 3000
-                    })}
+                    onClick={() =>
+                        toast.current?.show({
+                            severity: 'info',
+                            summary: 'En desarrollo',
+                            detail: 'Función de exportación próximamente',
+                            life: 3000
+                        })
+                    }
                 />
             </div>
         );
@@ -317,12 +314,7 @@ const VentasPage: React.FC = () => {
             <div className="flex align-items-center gap-2">
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" />
-                    <InputText 
-                        value={searchTerm} 
-                        onChange={handleSearch}
-                        placeholder="Buscar ventas..." 
-                        className="w-20rem"
-                    />
+                    <InputText value={searchTerm} onChange={handleSearch} placeholder="Buscar ventas..." className="w-20rem" />
                 </span>
             </div>
         );
@@ -341,20 +333,12 @@ const VentasPage: React.FC = () => {
 
     // Calcular resumen
     const calcularResumen = () => {
-        const completadas = ventas.filter(v => 
-            v.estado?.toUpperCase() === 'COMPLETADA' || v.estado?.toUpperCase() === 'COMPLETED'
-        ).length;
-        
-        const pendientes = ventas.filter(v => 
-            v.estado?.toUpperCase() === 'PENDIENTE' || v.estado?.toUpperCase() === 'PENDING'
-        ).length;
-        
-        const canceladas = ventas.filter(v => 
-            v.estado?.toUpperCase() === 'CANCELADA' || 
-            v.estado?.toUpperCase() === 'CANCELLED' || 
-            v.estado?.toUpperCase() === 'CANCELED'
-        ).length;
-        
+        const completadas = ventas.filter((v) => v.estado?.toUpperCase() === 'COMPLETADA' || v.estado?.toUpperCase() === 'COMPLETED').length;
+
+        const pendientes = ventas.filter((v) => v.estado?.toUpperCase() === 'PENDIENTE' || v.estado?.toUpperCase() === 'PENDING').length;
+
+        const canceladas = ventas.filter((v) => v.estado?.toUpperCase() === 'CANCELADA' || v.estado?.toUpperCase() === 'CANCELLED' || v.estado?.toUpperCase() === 'CANCELED').length;
+
         const totalVentas = ventas.reduce((sum, v) => {
             const esCompletada = v.estado?.toUpperCase() === 'COMPLETADA' || v.estado?.toUpperCase() === 'COMPLETED';
             return esCompletada ? sum + (v.total || 0) : sum;
@@ -376,9 +360,7 @@ const VentasPage: React.FC = () => {
                     <i className="pi pi-shopping-cart mr-3" style={{ color: primaryColor }}></i>
                     Gestión de Ventas
                 </h1>
-                <p className="text-600 text-lg">
-                    Administra las ventas y pedidos de tu negocio
-                </p>
+                <p className="text-600 text-lg">Administra las ventas y pedidos de tu negocio</p>
             </div>
 
             {/* Cards de resumen */}
@@ -387,9 +369,7 @@ const VentasPage: React.FC = () => {
                     <Card className="bg-green-50 border-green-500">
                         <div className="flex align-items-center justify-content-between">
                             <div>
-                                <div className="text-green-600 font-bold text-2xl">
-                                    {resumen.completadas}
-                                </div>
+                                <div className="text-green-600 font-bold text-2xl">{resumen.completadas}</div>
                                 <div className="text-600">Completadas</div>
                             </div>
                             <i className="pi pi-check-circle text-green-600 text-4xl"></i>
@@ -400,9 +380,7 @@ const VentasPage: React.FC = () => {
                     <Card className="bg-orange-50 border-orange-500">
                         <div className="flex align-items-center justify-content-between">
                             <div>
-                                <div className="text-orange-600 font-bold text-2xl">
-                                    {resumen.pendientes}
-                                </div>
+                                <div className="text-orange-600 font-bold text-2xl">{resumen.pendientes}</div>
                                 <div className="text-600">Pendientes</div>
                             </div>
                             <i className="pi pi-clock text-orange-600 text-4xl"></i>
@@ -413,9 +391,7 @@ const VentasPage: React.FC = () => {
                     <Card className="bg-red-50 border-red-500">
                         <div className="flex align-items-center justify-content-between">
                             <div>
-                                <div className="text-red-600 font-bold text-2xl">
-                                    {resumen.canceladas}
-                                </div>
+                                <div className="text-red-600 font-bold text-2xl">{resumen.canceladas}</div>
                                 <div className="text-600">Canceladas</div>
                             </div>
                             <i className="pi pi-times-circle text-red-600 text-4xl"></i>
@@ -426,9 +402,7 @@ const VentasPage: React.FC = () => {
                     <Card className="bg-blue-50 border-blue-500">
                         <div className="flex align-items-center justify-content-between">
                             <div>
-                                <div className="text-blue-600 font-bold text-2xl">
-                                    {ventasService.formatearPrecio(resumen.totalVentas)}
-                                </div>
+                                <div className="text-blue-600 font-bold text-2xl">{ventasService.formatearPrecio(resumen.totalVentas)}</div>
                                 <div className="text-600">Total Ventas</div>
                             </div>
                             <i className="pi pi-dollar text-blue-600 text-4xl"></i>
@@ -439,16 +413,12 @@ const VentasPage: React.FC = () => {
 
             {/* Tabla de ventas */}
             <Card>
-                <Toolbar 
-                    className="mb-4" 
-                    left={leftToolbarTemplate} 
-                    right={rightToolbarTemplate}
-                />
+                <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate} />
 
                 {loading ? (
                     renderSkeleton()
                 ) : (
-                    <DataTable 
+                    <DataTable
                         value={ventasFiltradas}
                         paginator
                         rows={10}
@@ -461,42 +431,12 @@ const VentasPage: React.FC = () => {
                         sortField="fechaVenta"
                         sortOrder={-1}
                     >
-                        <Column 
-                            field="numeroFactura" 
-                            header="N° Factura" 
-                            body={numeroFacturaBodyTemplate}
-                            sortable
-                        />
-                        <Column 
-                            field="cliente.nombre" 
-                            header="Cliente" 
-                            body={clienteBodyTemplate}
-                            sortable
-                        />
-                        <Column 
-                            field="total" 
-                            header="Total" 
-                            body={totalBodyTemplate}
-                            sortable
-                        />
-                        <Column 
-                            field="estado" 
-                            header="Estado" 
-                            body={estadoBodyTemplate}
-                            sortable
-                        />
-                        <Column 
-                            field="fechaVenta" 
-                            header="Fecha" 
-                            body={fechaBodyTemplate}
-                            sortable
-                        />
-                        <Column 
-                            body={actionBodyTemplate} 
-                            header="Acciones"
-                            style={{ width: '150px' }}
-                            sortable={false}
-                        />
+                        <Column field="numeroFactura" header="N° Factura" body={numeroFacturaBodyTemplate} sortable />
+                        <Column field="cliente.nombre" header="Cliente" body={clienteBodyTemplate} sortable />
+                        <Column field="total" header="Total" body={totalBodyTemplate} sortable />
+                        <Column field="estado" header="Estado" body={estadoBodyTemplate} sortable />
+                        <Column field="fechaVenta" header="Fecha" body={fechaBodyTemplate} sortable />
+                        <Column body={actionBodyTemplate} header="Acciones" style={{ width: '150px' }} sortable={false} />
                     </DataTable>
                 )}
             </Card>

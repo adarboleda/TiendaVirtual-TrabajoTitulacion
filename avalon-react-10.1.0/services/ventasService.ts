@@ -60,27 +60,26 @@ export interface ApiResponse<T> {
 }
 
 class VentasService {
-    
     // =====================================
     // MÉTODOS AUXILIARES
     // =====================================
-    
+
     private async makeRequest<T>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
         try {
             const token = localStorage.getItem('token');
-            
+
             const response = await fetch(`${API_BASE_URL}${url}`, {
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : '',
-                    ...options.headers,
+                    Authorization: token ? `Bearer ${token}` : '',
+                    ...options.headers
                 },
-                ...options,
+                ...options
             });
 
             if (!response.ok) {
                 let errorMessage = `Error ${response.status}`;
-                
+
                 try {
                     const errorData = await response.text();
                     if (errorData) {
@@ -89,10 +88,10 @@ class VentasService {
                 } catch (parseError) {
                     errorMessage += ': Error desconocido';
                 }
-                
+
                 return {
                     success: false,
-                    message: errorMessage,
+                    message: errorMessage
                 };
             }
 
@@ -103,13 +102,13 @@ class VentasService {
                     return {
                         success: true,
                         message: 'Operación exitosa',
-                        data,
+                        data
                     };
                 } catch {
                     // Si no hay JSON, retornar éxito sin data
                     return {
                         success: true,
-                        message: 'Operación exitosa',
+                        message: 'Operación exitosa'
                     };
                 }
             }
@@ -118,13 +117,13 @@ class VentasService {
             return {
                 success: true,
                 message: 'Operación exitosa',
-                data,
+                data
             };
         } catch (error: any) {
             console.error('Error en la petición:', error);
             return {
                 success: false,
-                message: error.message || 'Error de conexión con el servidor',
+                message: error.message || 'Error de conexión con el servidor'
             };
         }
     }
@@ -132,7 +131,7 @@ class VentasService {
     // =====================================
     // MÉTODOS PARA VENTAS
     // =====================================
-    
+
     /**
      * Crear una nueva venta
      */
@@ -140,7 +139,7 @@ class VentasService {
         console.log('📝 Creando venta:', venta);
         return this.makeRequest<VentaResponse>('/api/ventas', {
             method: 'POST',
-            body: JSON.stringify(venta),
+            body: JSON.stringify(venta)
         });
     }
 
@@ -177,22 +176,30 @@ class VentasService {
     }
 
     /**
+     * Listar ventas por emprendedor
+     */
+    async listarVentasPorEmprendedor(emprendedorId: number): Promise<ApiResponse<VentaResponse[]>> {
+        console.log('📋 Listando ventas por emprendedor:', emprendedorId);
+        return this.makeRequest<VentaResponse[]>(`/api/ventas/emprendedor/${emprendedorId}`);
+    }
+
+    /**
      * Completar una venta (cambiar estado a COMPLETADA)
      */
     async completarVenta(id: number): Promise<ApiResponse<VentaResponse>> {
         console.log('✅ Completando venta:', id);
-        
+
         try {
             const response = await this.makeRequest<VentaResponse>(`/api/ventas/${id}/completar`, {
-                method: 'PUT',
+                method: 'PUT'
             });
-            
+
             if (response.success) {
                 console.log('✅ Venta completada exitosamente');
             } else {
                 console.error('❌ Error completando venta:', response.message);
             }
-            
+
             return response;
         } catch (error: any) {
             console.error('❌ Error en completarVenta:', error);
@@ -208,18 +215,18 @@ class VentasService {
      */
     async cancelarVenta(id: number): Promise<ApiResponse<VentaResponse>> {
         console.log('❌ Cancelando venta:', id);
-        
+
         try {
             const response = await this.makeRequest<VentaResponse>(`/api/ventas/${id}/cancelar`, {
-                method: 'PUT',
+                method: 'PUT'
             });
-            
+
             if (response.success) {
                 console.log('✅ Venta cancelada exitosamente');
             } else {
                 console.error('❌ Error cancelando venta:', response.message);
             }
-            
+
             return response;
         } catch (error: any) {
             console.error('❌ Error en cancelarVenta:', error);
@@ -236,13 +243,13 @@ class VentasService {
     async descargarFacturaPDF(ventaId: number): Promise<void> {
         try {
             console.log('📄 Descargando factura PDF para venta:', ventaId);
-            
+
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/api/ventas/${ventaId}/factura`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
-                },
+                    Authorization: token ? `Bearer ${token}` : ''
+                }
             });
 
             if (!response.ok) {
@@ -251,21 +258,21 @@ class VentasService {
 
             // Obtener el blob del PDF
             const blob = await response.blob();
-            
+
             // Crear URL temporal para descarga
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.download = `factura_${ventaId}.pdf`;
-            
+
             // Simular click para descargar
             document.body.appendChild(link);
             link.click();
-            
+
             // Limpiar
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
+
             console.log('✅ Factura descargada exitosamente');
         } catch (error: any) {
             console.error('❌ Error descargando factura:', error);
@@ -278,21 +285,21 @@ class VentasService {
      */
     async generarFacturaPDF(ventaId: number): Promise<ApiResponse<string>> {
         console.log('🧾 Generando factura PDF para venta:', ventaId);
-        
+
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/api/ventas/${ventaId}/factura/generar`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
-                },
+                    Authorization: token ? `Bearer ${token}` : ''
+                }
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
                 return {
                     success: false,
-                    message: errorText || 'Error al generar factura',
+                    message: errorText || 'Error al generar factura'
                 };
             }
 
@@ -300,13 +307,13 @@ class VentasService {
             return {
                 success: true,
                 message: mensaje,
-                data: mensaje,
+                data: mensaje
             };
         } catch (error: any) {
             console.error('❌ Error generando factura:', error);
             return {
                 success: false,
-                message: error.message || 'Error generando factura',
+                message: error.message || 'Error generando factura'
             };
         }
     }
@@ -314,7 +321,7 @@ class VentasService {
     // =====================================
     // MÉTODOS AUXILIARES DE FORMATO
     // =====================================
-    
+
     /**
      * Formatear fecha
      */
@@ -323,7 +330,7 @@ class VentasService {
             if (!fecha) return 'Fecha no disponible';
             const date = new Date(fecha);
             if (isNaN(date.getTime())) return 'Fecha inválida';
-            
+
             return date.toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'short',
@@ -344,7 +351,7 @@ class VentasService {
         if (typeof precio !== 'number' || isNaN(precio)) {
             return '$0.00';
         }
-        
+
         return new Intl.NumberFormat('es-EC', {
             style: 'currency',
             currency: 'USD'
@@ -354,9 +361,9 @@ class VentasService {
     /**
      * Obtener color del estado (para PrimeReact Badge)
      */
-    obtenerColorEstado(estado: string): "success" | "warning" | "danger" | "info" {
+    obtenerColorEstado(estado: string): 'success' | 'warning' | 'danger' | 'info' {
         if (!estado) return 'info';
-        
+
         switch (estado.toUpperCase()) {
             case 'COMPLETADA':
             case 'COMPLETED':
@@ -378,7 +385,7 @@ class VentasService {
      */
     obtenerIconoEstado(estado: string): string {
         if (!estado) return 'pi pi-info-circle';
-        
+
         switch (estado.toUpperCase()) {
             case 'COMPLETADA':
             case 'COMPLETED':
@@ -400,7 +407,7 @@ class VentasService {
      */
     formatearEstado(estado: string): string {
         if (!estado) return 'Desconocido';
-        
+
         switch (estado.toUpperCase()) {
             case 'COMPLETADA':
             case 'COMPLETED':
@@ -437,4 +444,4 @@ class VentasService {
 
 // Exportar una instancia única del servicio
 const ventasService = new VentasService();
-export default ventasService;   
+export default ventasService;

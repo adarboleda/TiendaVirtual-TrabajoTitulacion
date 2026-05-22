@@ -46,6 +46,13 @@ public class VentaRepositoryImpl implements VentaRepository {
     }
 
     @Override
+    public List<Venta> findByEmprendedorId(Long emprendedorId) {
+        return jpaRepository.findByEmprendedorId(emprendedorId).stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Venta> findAll() {
         return jpaRepository.findAll().stream()
                 .map(mapper::toDomain)

@@ -42,7 +42,7 @@ public class SeguimientoLogisticaRepositoryImpl implements SeguimientoLogisticaR
 
     @Override
     public Optional<SeguimientoLogistica> findUltimoEstadoByVentaId(Long ventaId) {
-        return jpaRepository.findUltimoEstadoByVentaId(ventaId)
+        return jpaRepository.findTopByVentaIdOrderByFechaCreacionDesc(ventaId)
                 .map(mapper::toDomain);
     }
 

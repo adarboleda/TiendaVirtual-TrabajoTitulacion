@@ -10,6 +10,7 @@ public interface VentaService {
     Venta obtenerVentaPorId(Long id);
     Venta obtenerVentaPorNumeroFactura(String numeroFactura);
     List<Venta> listarVentasPorCliente(Long clienteId);
+    List<Venta> listarVentasPorEmprendedor(Long emprendedorId);
     List<Venta> listarVentas();
     Venta completarVenta(Long id);
     Venta cancelarVenta(Long id);

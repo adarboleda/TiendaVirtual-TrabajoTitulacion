@@ -71,6 +71,16 @@ public class VentaController {
         return ResponseEntity.ok(ventasDto);
     }
 
+    @GetMapping("/emprendedor/{emprendedorId}")
+    @Operation(summary = "Listar todas las ventas de un emprendedor")
+    public ResponseEntity<List<VentaResponseDto>> listarVentasPorEmprendedor(@PathVariable Long emprendedorId) {
+        List<Venta> ventas = ventaService.listarVentasPorEmprendedor(emprendedorId);
+        List<VentaResponseDto> ventasDto = ventas.stream()
+                .map(ventaMapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ventasDto);
+    }
+
     @GetMapping
     @Operation(summary = "Listar todas las ventas")
     public ResponseEntity<List<VentaResponseDto>> listarVentas() {

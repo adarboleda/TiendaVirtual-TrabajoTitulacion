@@ -10,5 +10,6 @@ public interface VentaRepository {
     Optional<Venta> findById(Long id);
     Optional<Venta> findByNumeroFactura(String numeroFactura);
     List<Venta> findByClienteId(Long clienteId);
+    List<Venta> findByEmprendedorId(Long emprendedorId);
     List<Venta> findAll();
 }

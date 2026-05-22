@@ -20,9 +20,7 @@ public interface JpaSeguimientoLogisticaRepository extends JpaRepository<Seguimi
     /**
      * Encuentra el último estado de seguimiento de una venta
      */
-    @Query("SELECT s FROM SeguimientoLogisticaEntity s WHERE s.ventaId = :ventaId " +
-           "ORDER BY s.fechaCreacion DESC LIMIT 1")
-    Optional<SeguimientoLogisticaEntity> findUltimoEstadoByVentaId(@Param("ventaId") Long ventaId);
+    Optional<SeguimientoLogisticaEntity> findTopByVentaIdOrderByFechaCreacionDesc(Long ventaId);
 
     /**
      * Encuentra todos los seguimientos por estado
@@ -33,8 +31,9 @@ public interface JpaSeguimientoLogisticaRepository extends JpaRepository<Seguimi
      * Encuentra todos los seguimientos de un emprendedor específico
      */
     @Query("SELECT s FROM SeguimientoLogisticaEntity s " +
-           "JOIN VentaEntity v ON s.ventaId = v.id " +
-           "WHERE v.emprendedorId = :emprendedorId " +
+           "WHERE s.ventaId IN (" +
+           "SELECT v.id FROM VentaEntity v WHERE v.emprendedorId = :emprendedorId" +
+           ") " +
            "ORDER BY s.fechaCreacion DESC")
     List<SeguimientoLogisticaEntity> findByEmprendedorId(@Param("emprendedorId") Long emprendedorId);
 
@@ -42,8 +41,9 @@ public interface JpaSeguimientoLogisticaRepository extends JpaRepository<Seguimi
      * Encuentra seguimientos de un emprendedor en un estado específico
      */
     @Query("SELECT s FROM SeguimientoLogisticaEntity s " +
-           "JOIN VentaEntity v ON s.ventaId = v.id " +
-           "WHERE v.emprendedorId = :emprendedorId " +
+           "WHERE s.ventaId IN (" +
+           "SELECT v.id FROM VentaEntity v WHERE v.emprendedorId = :emprendedorId" +
+           ") " +
            "AND s.estadoLogistica = :estado " +
            "ORDER BY s.fechaCreacion DESC")
     List<SeguimientoLogisticaEntity> findByEmprendedorIdAndEstado(

@@ -190,12 +190,27 @@ public class SeguimientoLogisticaController {
     }
 
     // Clase interna para información de estados
-    @lombok.Data
-    @lombok.AllArgsConstructor
-    @lombok.NoArgsConstructor
-    private static class EstadoInfo {
-        private String codigo;
-        private String titulo;
-        private String descripcion;
+    public static class EstadoInfo {
+        private final String codigo;
+        private final String titulo;
+        private final String descripcion;
+
+        public EstadoInfo(String codigo, String titulo, String descripcion) {
+            this.codigo = codigo;
+            this.titulo = titulo;
+            this.descripcion = descripcion;
+        }
+
+        public String getCodigo() {
+            return codigo;
+        }
+
+        public String getTitulo() {
+            return titulo;
+        }
+
+        public String getDescripcion() {
+            return descripcion;
+        }
     }
 }

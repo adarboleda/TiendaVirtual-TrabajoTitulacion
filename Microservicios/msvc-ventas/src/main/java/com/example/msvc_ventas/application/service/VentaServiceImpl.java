@@ -130,6 +130,20 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Venta> listarVentasPorEmprendedor(Long emprendedorId) {
+        List<Venta> ventas = ventaRepository.findByEmprendedorId(emprendedorId);
+
+        // Cargar los detalles de cada venta
+        for (Venta venta : ventas) {
+            List<DetalleVenta> detalles = detalleVentaRepository.findByVentaId(venta.getId());
+            venta.setDetalles(detalles);
+        }
+
+        return ventas;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Venta> listarVentas() {
         List<Venta> ventas = ventaRepository.findAll();
 
