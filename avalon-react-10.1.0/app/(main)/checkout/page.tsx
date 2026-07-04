@@ -198,7 +198,7 @@ const CheckoutPage: React.FC = () => {
                     const userData = authService.getUserInfo();
 
                     const paymentIntentResponse = await crearPaymentIntent({
-                        ventaId: ventaId,
+                        ventaId: ventaId || 0,
                         clienteId: userData?.id || 0,
                         monto: cartSummary.total
                     });
