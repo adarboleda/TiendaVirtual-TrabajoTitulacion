@@ -1,42 +1,9 @@
-const JavaScriptObfuscator = require('webpack-obfuscator');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config, { dev, isServer }) => {
-    // Solo aplicar obfuscación en producción y del lado del cliente
-    if (!dev && !isServer) {
-      config.plugins.push(
-        new JavaScriptObfuscator({
-          // Configuración moderada para mantener compatibilidad
-          compact: true,
-          controlFlowFlattening: false,
-          deadCodeInjection: false,
-          debugProtection: false,
-          debugProtectionInterval: 0,
-          disableConsoleOutput: true,
-          identifierNamesGenerator: 'hexadecimal',
-          log: false,
-          numbersToExpressions: false,
-          renameGlobals: false,
-          rotateStringArray: true,
-          selfDefending: true,
-          shuffleStringArray: true,
-          splitStrings: true,
-          splitStringsChunkLength: 5,
-          stringArray: true,
-          stringArrayEncoding: ['base64'],
-          stringArrayIndexShift: true,
-          stringArrayThreshold: 0.8,
-          transformObjectKeys: true,
-          unicodeEscapeSequence: false
-        }, [
-          // Excluir archivos que pueden causar problemas
-          'node_modules/**',
-          'primereact/**'
-        ])
-      );
-    }
-    
+    // ✅ Sin obfuscación - el obfuscador causa bundles 3-5x más grandes
+    // y 10x más lentos de parsear en el navegador. No va en producción.
+
     // ✅ Configuración para evitar errores de resolución de módulos
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -44,105 +11,135 @@ const nextConfig = {
       net: false,
       tls: false
     };
-    
+
     return config;
   },
-  
-  // ✅ Configuraciones adicionales de Next.js corregidas
-  reactStrictMode: false, // ✅ Desactivar para evitar doble renderizado
+
+  // ✅ Configuraciones adicionales de Next.js
+  reactStrictMode: false, // Evitar doble renderizado
   swcMinify: true,
-  
+
   // ✅ Configuración de transpilación para PrimeReact
   transpilePackages: ['primereact'],
-  
-  // ✅ Configuración experimental corregida
+
+  // ✅ Configuración experimental
   experimental: {
-    esmExternals: 'loose', // ✅ Cambiado de false a 'loose'
-    optimizeCss: false // ✅ Evitar conflictos con PrimeReact
+    esmExternals: 'loose',
+    optimizeCss: false // Evitar conflictos con PrimeReact
   },
-  
-  // ✅ Configuración de imágenes para evitar errores 404
+
+  // ✅ Configuración de imágenes
   images: {
-    domains: ['via.placeholder.com', 'localhost'],
+    domains: ['via.placeholder.com', 'localhost', 'tienda.gadmsigchos.gob.ec'],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    unoptimized: true // ✅ Para evitar errores de optimización
+    unoptimized: true
   },
-  
-  // ✅ Configuración para archivos estáticos y API reverse proxy
+
+  // ✅ Proxy inverso hacia los microservicios Java
+  // IMPORTANTE: Las rutas específicas van PRIMERO (más específica antes que más general)
   async rewrites() {
     return [
-      {
-        source: '/logo.png',
-        destination: '/layout/images/logo-dark.svg'
-      },
-      {
-        source: '/logo-dark.svg',
-        destination: '/layout/images/logo-dark.svg'
-      },
-      {
-        source: '/logo-white.svg',
-        destination: '/layout/images/logo-white.svg'
-      },
+      // Rutas de logos/imágenes
+      { source: '/logo.png',       destination: '/layout/images/logo-dark.svg'  },
+      { source: '/logo-dark.svg',  destination: '/layout/images/logo-dark.svg'  },
+      { source: '/logo-white.svg', destination: '/layout/images/logo-white.svg' },
+
+      // --- Microservicio de Productos (puerto 8081) ---
+      // Regla para /productos/listado y similares
       {
         source: '/api/proxy/productos/productos/:path*',
         destination: 'http://127.0.0.1:8081/api/productos/:path*'
+      },
+      // Regla para /categorias (sin path adicional) y /categorias/:id
+      {
+        source: '/api/proxy/productos/categorias',
+        destination: 'http://127.0.0.1:8081/api/categorias'
       },
       {
         source: '/api/proxy/productos/categorias/:path*',
         destination: 'http://127.0.0.1:8081/api/categorias/:path*'
       },
+      // Regla para /empresas (sin path adicional) y /empresas/:id
+      {
+        source: '/api/proxy/productos/empresas',
+        destination: 'http://127.0.0.1:8081/api/empresas'
+      },
       {
         source: '/api/proxy/productos/empresas/:path*',
         destination: 'http://127.0.0.1:8081/api/empresas/:path*'
       },
+      // Regla general para cualquier otro path de productos
       {
         source: '/api/proxy/productos/:path*',
-        destination: 'http://127.0.0.1:8081/:path*'
+        destination: 'http://127.0.0.1:8081/api/:path*'
+      },
+
+      // --- Microservicio de Inventario (puerto 8082) ---
+      {
+        source: '/api/proxy/inventarios',
+        destination: 'http://127.0.0.1:8082/api/inventarios'
       },
       {
         source: '/api/proxy/inventarios/:path*',
-        destination: 'http://127.0.0.1:8082/:path*'
+        destination: 'http://127.0.0.1:8082/api/inventarios/:path*'
+      },
+
+      // --- Microservicio de Ventas (puerto 8083) ---
+      {
+        source: '/api/proxy/ventas',
+        destination: 'http://127.0.0.1:8083/api/ventas'
       },
       {
         source: '/api/proxy/ventas/:path*',
-        destination: 'http://127.0.0.1:8083/:path*'
+        destination: 'http://127.0.0.1:8083/api/ventas/:path*'
+      },
+
+      // --- Microservicio de Autenticación (puerto 8084) ---
+      {
+        source: '/api/proxy/auth',
+        destination: 'http://127.0.0.1:8084/api/auth'
       },
       {
         source: '/api/proxy/auth/:path*',
-        destination: 'http://127.0.0.1:8084/:path*'
+        destination: 'http://127.0.0.1:8084/api/:path*'
       }
     ];
   },
-  
-  // ✅ Headers para evitar errores CORS y cache
+
+  // ✅ Headers de seguridad y cache
   async headers() {
     return [
       {
+        // Archivos estáticos JS/CSS: cache agresivo (1 año, cambia con hash)
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }
+        ]
+      },
+      {
+        // Imágenes: cache de 1 día
+        source: '/_next/image',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400' }
+        ]
+      },
+      {
+        // Páginas: sin cache (siempre frescas)
         source: '/(.*)',
         headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY'
-          },
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate'
-          }
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options',        value: 'SAMEORIGIN' }
         ]
       }
     ];
   },
-  
-  // ✅ Configuración del compilador
+
+  // ✅ Compilador: remover console.log en producción para menos overhead
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn']
-    } : false
+    removeConsole: process.env.NODE_ENV === 'production'
+      ? { exclude: ['error', 'warn'] }
+      : false
   }
 };
 

@@ -48,10 +48,13 @@ export interface ApiResponse<T> {
 
 class ProductService {
     private readonly PRODUCTOS_URL = process.env.NEXT_PUBLIC_PRODUCTOS_API_URL || 'http://localhost:8081/api';
-    private readonly INVENTARIO_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL ? `${process.env.NEXT_PUBLIC_INVENTARIO_API_URL}/api/inventarios` : 'http://localhost:8082/api/inventarios';
+    // ✅ CORREGIDO: INVENTARIO_URL apunta directamente al proxy de inventarios.
+    // El proxy de next.config.js traduce /api/proxy/inventarios/:path* → http://127.0.0.1:8082/api/inventarios/:path*
+    // Por eso NO hay que agregar /api/inventarios aquí.
+    private readonly INVENTARIO_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL || 'http://localhost:8082/api/inventarios';
     private cache: Map<string, { data: any; timestamp: number }> = new Map();
     private stockCache: Map<number, number> = new Map(); // Cache específico para stock
-    private readonly CACHE_DURATION = 2 * 60 * 1000; // 2 minutos
+    private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
     /**
      * ✅ OBTENER STOCK DE UN PRODUCTO (con mejor manejo de errores)
@@ -69,7 +72,7 @@ class ProductService {
             const response = await fetch(`${this.INVENTARIO_URL}/cantidad/producto/${productoId}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
-                signal: AbortSignal.timeout(3000) // 3 segundos
+                signal: AbortSignal.timeout(8000) // 8 segundos (JVM necesita tiempo)
             });
 
             if (response.ok) {
@@ -129,46 +132,32 @@ class ProductService {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(productosIds),
-                signal: AbortSignal.timeout(3000) // 3 segundos para batch
+                signal: AbortSignal.timeout(10000) // 10 segundos para batch completo
             });
 
             if (response.ok) {
                 const cantidadesResponse = await response.json();
-                console.log(`📦 Respuesta cantidades batch:`, cantidadesResponse);
 
                 // ✅ CONVERTIR DE {"1": 40, "2": 7, "3": 20} A MAP
                 Object.entries(cantidadesResponse).forEach(([productIdStr, cantidad]) => {
                     const productId = parseInt(productIdStr);
                     const stock = typeof cantidad === 'number' ? cantidad : 0;
                     stockMap.set(productId, stock);
-                    this.stockCache.set(productId, stock); // Guardar en cache también
+                    this.stockCache.set(productId, stock);
                 });
 
                 console.log(`✅ Cantidades batch obtenidas para ${stockMap.size} productos`);
                 return stockMap;
             } else {
-                console.log(`⚠️ Endpoint cantidades batch falló (${response.status}), usando consultas individuales...`);
+                console.log(`⚠️ Endpoint cantidades batch falló (${response.status})`);
             }
         } catch (error: any) {
-            console.log(`⚠️ Error en cantidades batch, usando consultas individuales:`, error.message);
+            console.log(`⚠️ Error en cantidades batch: ${error.message}`);
         }
 
-        // ✅ FALLBACK: Consultas individuales si el batch falla
-        console.log(`🔄 Fallback: consultando cantidades individualmente...`);
-
-        for (const productoId of productosIds) {
-            try {
-                const stock = await this.obtenerStockProducto(productoId);
-                stockMap.set(productoId, stock);
-
-                // Pequeña pausa para no saturar
-                await new Promise((resolve) => setTimeout(resolve, 50));
-            } catch (error) {
-                console.log(`❌ Error consultando cantidad producto ${productoId}, usando 0`);
-                stockMap.set(productoId, 0);
-            }
-        }
-
+        // ✅ Si el batch falla simplemente retornar mapa vacío.
+        // NO hacer 39 requests individuales en serie — eso satura el servidor.
+        console.log('⚠️ Stock batch falló — productos mostrados sin stock (se reintentará en próxima carga)');
         return stockMap;
     }
 
@@ -199,7 +188,7 @@ class ProductService {
                 const responseOptimizado = await fetch(`${this.PRODUCTOS_URL}/productos/listado`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
-                    signal: AbortSignal.timeout(2000) // 2 segundos máximo
+                    signal: AbortSignal.timeout(10000) // 10 segundos — JVM tarda en responder en frío
                 });
 
                 if (responseOptimizado.ok) {
@@ -250,7 +239,7 @@ class ProductService {
                     const responseBasico = await fetch(`${this.PRODUCTOS_URL}/productos`, {
                         method: 'GET',
                         headers: { 'Content-Type': 'application/json' },
-                        signal: AbortSignal.timeout(3000)
+                        signal: AbortSignal.timeout(10000) // 10 segundos fallback
                     });
 
                     if (responseBasico.ok) {
@@ -422,7 +411,7 @@ class ProductService {
 
         try {
             const response = await fetch(`${this.PRODUCTOS_URL}/categorias`, {
-                signal: AbortSignal.timeout(2000)
+                signal: AbortSignal.timeout(8000) // 8 segundos
             });
 
             if (response.ok) {
@@ -451,7 +440,7 @@ class ProductService {
 
         try {
             const response = await fetch(`${this.PRODUCTOS_URL}/empresas`, {
-                signal: AbortSignal.timeout(2000)
+                signal: AbortSignal.timeout(8000) // 8 segundos
             });
 
             if (response.ok) {
