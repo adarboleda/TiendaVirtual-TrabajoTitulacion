@@ -19,6 +19,7 @@ interface UsuarioResponseDto {
     apellido: string;
     activo: boolean;
     roles: string[];
+    empresaId?: number; // Presente si el usuario es un emprendedor
 }
 
 interface LoginResponse {
