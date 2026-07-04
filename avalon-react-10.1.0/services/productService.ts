@@ -332,52 +332,33 @@ class ProductService {
      */
     private async actualizarStockEnSegundoPlano(productos: ProductoResponse[]) {
         try {
-            console.log(`🔄 Actualizando stock en segundo plano para ${productos.length} productos...`);
+            console.log(`🔄 Actualizando stock en segundo plano para ${productos.length} productos usando BATCH...`);
+            
+            const ids = productos.map((p) => p.id);
+            const stockMap = await this.obtenerStockBatch(ids);
 
-            // ✅ PROCESAR TODOS LOS PRODUCTOS (no solo 3)
-            const actualizacionesPromises = productos.map(async (producto, index) => {
-                try {
-                    // Pequeña pausa progresiva para no saturar el servidor
-                    await new Promise((resolve) => setTimeout(resolve, index * 100));
+            productos.forEach((producto) => {
+                const stock = stockMap.get(producto.id) ?? 0;
+                if (producto.inventario) {
+                    const stockAnterior = producto.inventario.cantidad;
+                    producto.inventario.cantidad = stock;
+                    producto.inventario.activo = stock > 0;
+                    producto.inventario.ubicacion = stock > 0 ? 'Disponible' : 'No disponible';
 
-                    const stock = await this.obtenerStockProducto(producto.id);
-
-                    if (producto.inventario) {
-                        const stockAnterior = producto.inventario.cantidad;
-                        producto.inventario.cantidad = stock;
-                        producto.inventario.activo = stock > 0;
-                        producto.inventario.ubicacion = stock > 0 ? 'Disponible' : 'No disponible';
-
-                        console.log(`🔄 Stock actualizado para ${producto.nombre}: ${stockAnterior} → ${stock}`);
-
-                        // ✅ FORZAR RE-RENDER
-                        window.dispatchEvent(
-                            new CustomEvent('stockUpdated', {
-                                detail: { productoId: producto.id, stock, producto }
-                            })
-                        );
+                    if (stockAnterior !== stock) {
+                        console.log(`🔄 Stock actualizado (Batch) para ${producto.nombre}: ${stockAnterior} → ${stock}`);
                     }
-                } catch (error) {
-                    console.log(`❌ Error actualizando stock para ${producto.nombre}, usando 0:`, error);
 
-                    // ✅ SI HAY ERROR, SETEAR EN 0 Y CONTINUAR
-                    if (producto.inventario) {
-                        producto.inventario.cantidad = 0;
-                        producto.inventario.activo = false;
-                        producto.inventario.ubicacion = 'No disponible';
-
-                        window.dispatchEvent(
-                            new CustomEvent('stockUpdated', {
-                                detail: { productoId: producto.id, stock: 0, producto }
-                            })
-                        );
-                    }
+                    // ✅ FORZAR RE-RENDER
+                    window.dispatchEvent(
+                        new CustomEvent('stockUpdated', {
+                            detail: { productoId: producto.id, stock, producto }
+                        })
+                    );
                 }
             });
 
-            // ✅ ESPERAR A QUE TODAS LAS ACTUALIZACIONES TERMINEN
-            await Promise.allSettled(actualizacionesPromises);
-            console.log(`✅ Stock actualizado para todos los ${productos.length} productos`);
+            console.log(`✅ Stock batch actualizado para todos los ${productos.length} productos`);
         } catch (error) {
             console.log('⚠️ Error general actualizando stock en segundo plano:', error);
         }
