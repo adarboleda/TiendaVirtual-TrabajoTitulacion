@@ -143,7 +143,7 @@ const FeaturedProducts: React.FC = () => {
         }
 
         // ✅ AGREGAR AL CARRITO
-        const result = cartService.addToCart(producto, 1);
+        const result = cartService.addToCart(producto as any, 1);
 
         if (result.success) {
             toast.current?.show({
@@ -160,7 +160,7 @@ const FeaturedProducts: React.FC = () => {
                 acceptLabel: 'Sí, vaciar y agregar',
                 rejectLabel: 'Cancelar',
                 accept: () => {
-                    const clearResult = cartService.addToCart(producto, 1, true);
+                    const clearResult = cartService.addToCart(producto as any, 1, true);
                     if (clearResult.success) {
                         toast.current?.show({
                             severity: 'success',
