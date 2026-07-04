@@ -86,31 +86,31 @@ const nextConfig = {
       },
       {
         source: '/api/proxy/productos/productos/:path*',
-        destination: 'http://localhost:8081/api/productos/:path*'
+        destination: 'http://127.0.0.1:8081/api/productos/:path*'
       },
       {
         source: '/api/proxy/productos/categorias/:path*',
-        destination: 'http://localhost:8081/api/categorias/:path*'
+        destination: 'http://127.0.0.1:8081/api/categorias/:path*'
       },
       {
         source: '/api/proxy/productos/empresas/:path*',
-        destination: 'http://localhost:8081/api/empresas/:path*'
+        destination: 'http://127.0.0.1:8081/api/empresas/:path*'
       },
       {
         source: '/api/proxy/productos/:path*',
-        destination: 'http://localhost:8081/:path*'
+        destination: 'http://127.0.0.1:8081/:path*'
       },
       {
         source: '/api/proxy/inventarios/:path*',
-        destination: 'http://localhost:8082/:path*'
+        destination: 'http://127.0.0.1:8082/:path*'
       },
       {
         source: '/api/proxy/ventas/:path*',
-        destination: 'http://localhost:8083/:path*'
+        destination: 'http://127.0.0.1:8083/:path*'
       },
       {
         source: '/api/proxy/auth/:path*',
-        destination: 'http://localhost:8084/:path*'
+        destination: 'http://127.0.0.1:8084/:path*'
       }
     ];
   },
