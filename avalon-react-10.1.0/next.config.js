@@ -36,8 +36,8 @@ const nextConfig = {
     unoptimized: true
   },
 
-  // ✅ Proxy inverso hacia los microservicios Java
-  // IMPORTANTE: Las rutas específicas van PRIMERO (más específica antes que más general)
+  // ✅ Proxy inverso inteligente hacia los microservicios Java
+  // Evita double-appends de prefijos /api y redirige correctamente a cada puerto.
   async rewrites() {
     return [
       // Rutas de logos/imágenes
@@ -46,30 +46,6 @@ const nextConfig = {
       { source: '/logo-white.svg', destination: '/layout/images/logo-white.svg' },
 
       // --- Microservicio de Productos (puerto 8081) ---
-      // Regla para /productos/listado y similares
-      {
-        source: '/api/proxy/productos/productos/:path*',
-        destination: 'http://127.0.0.1:8081/api/productos/:path*'
-      },
-      // Regla para /categorias (sin path adicional) y /categorias/:id
-      {
-        source: '/api/proxy/productos/categorias',
-        destination: 'http://127.0.0.1:8081/api/categorias'
-      },
-      {
-        source: '/api/proxy/productos/categorias/:path*',
-        destination: 'http://127.0.0.1:8081/api/categorias/:path*'
-      },
-      // Regla para /empresas (sin path adicional) y /empresas/:id
-      {
-        source: '/api/proxy/productos/empresas',
-        destination: 'http://127.0.0.1:8081/api/empresas'
-      },
-      {
-        source: '/api/proxy/productos/empresas/:path*',
-        destination: 'http://127.0.0.1:8081/api/empresas/:path*'
-      },
-      // Regla general para cualquier otro path de productos
       {
         source: '/api/proxy/productos/:path*',
         destination: 'http://127.0.0.1:8081/api/:path*'
@@ -77,8 +53,8 @@ const nextConfig = {
 
       // --- Microservicio de Inventario (puerto 8082) ---
       {
-        source: '/api/proxy/inventarios',
-        destination: 'http://127.0.0.1:8082/api/inventarios'
+        source: '/api/proxy/inventarios/api/inventarios/:path*',
+        destination: 'http://127.0.0.1:8082/api/inventarios/:path*'
       },
       {
         source: '/api/proxy/inventarios/:path*',
@@ -87,22 +63,22 @@ const nextConfig = {
 
       // --- Microservicio de Ventas (puerto 8083) ---
       {
-        source: '/api/proxy/ventas',
-        destination: 'http://127.0.0.1:8083/api/ventas'
+        source: '/api/proxy/ventas/api/ventas/:path*',
+        destination: 'http://127.0.0.1:8083/api/ventas/:path*'
       },
       {
         source: '/api/proxy/ventas/:path*',
-        destination: 'http://127.0.0.1:8083/api/ventas/:path*'
+        destination: 'http://127.0.0.1:8083/:path*'
       },
 
       // --- Microservicio de Autenticación (puerto 8084) ---
       {
-        source: '/api/proxy/auth',
-        destination: 'http://127.0.0.1:8084/api/auth'
+        source: '/api/proxy/auth/api/:path*',
+        destination: 'http://127.0.0.1:8084/api/:path*'
       },
       {
         source: '/api/proxy/auth/:path*',
-        destination: 'http://127.0.0.1:8084/api/:path*'
+        destination: 'http://127.0.0.1:8084/:path*'
       }
     ];
   },
