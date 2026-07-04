@@ -70,7 +70,11 @@ function PayphoneConfirmationContent() {
                         console.log('💳 ID Transacción:', result.transactionId);
                         
                         // Como es Payphone, pasamos método como TARJETA y el transactionId como comprobante
-                        const checkoutRes = await cartService.processCheckout(undefined, 'TARJETA', result.transactionId);
+                        const checkoutRes = await cartService.processCheckout(
+                            undefined,
+                            'TARJETA',
+                            result.transactionId ? String(result.transactionId) : undefined
+                        );
                         
                         if (checkoutRes.success && checkoutRes.data?.ventaId) {
                             console.log('✅ Venta creada exitosamente. ID Venta:', checkoutRes.data.ventaId);
