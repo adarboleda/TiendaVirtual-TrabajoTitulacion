@@ -18,7 +18,9 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,9 +35,14 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final UsuarioService usuarioService;
     private final EmprendedorJpaRepository emprendedorRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public TokenResponseDto login(LoginRequestDto loginRequest) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUsername());
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
+            throw new BadCredentialsException("Contraseña incorrecta");
+        }
 
         // Obtener usuario completo para información adicional
         Usuario usuario = usuarioService.buscarPorUsername(loginRequest.getUsername())
