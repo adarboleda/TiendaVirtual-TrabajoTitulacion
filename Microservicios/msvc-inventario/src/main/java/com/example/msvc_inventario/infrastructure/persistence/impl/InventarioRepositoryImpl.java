@@ -37,7 +37,7 @@ public class InventarioRepositoryImpl implements InventarioRepository {
 
     @Override
     public Optional<Inventario> findByProductoId(Long productoId) {
-        return jpaRepository.findByProductoId(productoId)
+        return jpaRepository.findFirstByProductoId(productoId)
                 .map(mapper::toDomain);
     }
 

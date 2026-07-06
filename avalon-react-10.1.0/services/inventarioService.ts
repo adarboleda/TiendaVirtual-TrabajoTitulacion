@@ -82,6 +82,7 @@ class InventarioService {
         try {
             const response = await fetch(`${API_BASE_URL}${url}`, {
                 headers: {
+                    'Content-Type': 'application/json',
                     ...authService.getAuthHeaders(),
                     ...options.headers
                 },

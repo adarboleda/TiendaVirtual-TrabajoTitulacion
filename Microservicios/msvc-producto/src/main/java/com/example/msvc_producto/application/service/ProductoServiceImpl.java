@@ -98,8 +98,12 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional(readOnly = true)
     public Producto obtenerProductoPorId(Long id) {
-        return productoRepository.findById(id)
+        Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Producto no encontrado con ID: " + id));
+        // Forzar inicialización de relaciones lazy para evitar LazyInitializationException en el mapper
+        if (producto.getEmpresa() != null) producto.getEmpresa().getNombre();
+        if (producto.getCategoria() != null) producto.getCategoria().getNombre();
+        return producto;
     }
 
     @Override
