@@ -68,12 +68,15 @@ public class ProductoController {
         ProductoResponseDto responseDto = productoMapper.toDto(productoCreado);
 
         // Intentar obtener información de inventario
+        // ✅ Evitamos loop infinito (circular dependency) al no consultar inventario aquí
+        /*
         try {
             InventarioInfoDto inventarioInfo = inventarioClient.obtenerInventarioPorProductoId(productoCreado.getId());
             responseDto.setInventario(inventarioInfo);
         } catch (Exception e) {
             // Si no se puede obtener información de inventario, no hacer nada
         }
+        */
 
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
@@ -95,12 +98,15 @@ public class ProductoController {
         ProductoResponseDto responseDto = productoMapper.toDto(productoActualizado);
 
         // Intentar obtener información de inventario
+        // ✅ Evitamos loop infinito (circular dependency)
+        /*
         try {
             InventarioInfoDto inventarioInfo = inventarioClient.obtenerInventarioPorProductoId(productoActualizado.getId());
             responseDto.setInventario(inventarioInfo);
         } catch (Exception e) {
             // Si no se puede obtener información de inventario, no hacer nada
         }
+        */
 
         return ResponseEntity.ok(responseDto);
     }
@@ -112,12 +118,15 @@ public class ProductoController {
         ProductoResponseDto responseDto = productoMapper.toDto(producto);
 
         // Intentar obtener información de inventario
+        // ✅ Evitamos loop infinito (circular dependency)
+        /*
         try {
             InventarioInfoDto inventarioInfo = inventarioClient.obtenerInventarioPorProductoId(producto.getId());
             responseDto.setInventario(inventarioInfo);
         } catch (Exception e) {
             // Si no se puede obtener información de inventario, no hacer nada
         }
+        */
 
         return ResponseEntity.ok(responseDto);
     }
