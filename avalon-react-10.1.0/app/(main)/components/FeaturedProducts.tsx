@@ -183,7 +183,7 @@ const FeaturedProducts: React.FC = () => {
 
     const handleLoginRedirect = () => {
         setShowLoginDialog(false);
-        router.push('/auth/login');
+        router.push('/auth/login2');
     };
 
     /**

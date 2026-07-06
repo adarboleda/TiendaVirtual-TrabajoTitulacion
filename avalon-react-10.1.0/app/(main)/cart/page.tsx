@@ -113,7 +113,7 @@ const CartPage: React.FC = () => {
                 detail: 'Debes iniciar sesión para ver tu carrito',
                 life: 3000
             });
-            router.push('/auth/login');
+            router.push('/auth/login2');
             return;
         }
 

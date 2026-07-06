@@ -31,7 +31,7 @@ const Layout = (props: ChildContainerProps) => {
         } else {
             // Solo redirigir al login si NO estamos en la página raíz
             if (pathname !== '/') {
-                router.replace('/auth/login');
+                router.replace('/auth/login2');
             } else {
                 setIsAuthenticated(false);
             }

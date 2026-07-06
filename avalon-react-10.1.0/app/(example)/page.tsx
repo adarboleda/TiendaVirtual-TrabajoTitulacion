@@ -9,7 +9,7 @@ function Dashboard() {
     useEffect(() => {
         // Verificar autenticación inmediatamente sin renderizar nada
         if (!authService.isAuthenticated()) {
-            router.replace('/auth/login');
+            router.replace('/auth/login2');
         }
     }, [router]);
 

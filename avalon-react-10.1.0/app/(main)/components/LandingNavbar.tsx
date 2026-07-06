@@ -78,7 +78,7 @@ const LandingNavbar: React.FC = () => {
     }, [mounted]);
 
     const handleLoginClick = () => {
-        router.push('/auth/login');
+        router.push('/auth/login2');
     };
 
     const handleRegistroClick = () => {

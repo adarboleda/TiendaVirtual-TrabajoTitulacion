@@ -71,7 +71,7 @@ public class ProductoController {
         try {
             InventarioInfoDto inventarioInfo = inventarioClient.obtenerInventarioPorProductoId(productoCreado.getId());
             responseDto.setInventario(inventarioInfo);
-        } catch (FeignException e) {
+        } catch (Exception e) {
             // Si no se puede obtener información de inventario, no hacer nada
         }
 
@@ -98,7 +98,7 @@ public class ProductoController {
         try {
             InventarioInfoDto inventarioInfo = inventarioClient.obtenerInventarioPorProductoId(productoActualizado.getId());
             responseDto.setInventario(inventarioInfo);
-        } catch (FeignException e) {
+        } catch (Exception e) {
             // Si no se puede obtener información de inventario, no hacer nada
         }
 
@@ -115,7 +115,7 @@ public class ProductoController {
         try {
             InventarioInfoDto inventarioInfo = inventarioClient.obtenerInventarioPorProductoId(producto.getId());
             responseDto.setInventario(inventarioInfo);
-        } catch (FeignException e) {
+        } catch (Exception e) {
             // Si no se puede obtener información de inventario, no hacer nada
         }
 

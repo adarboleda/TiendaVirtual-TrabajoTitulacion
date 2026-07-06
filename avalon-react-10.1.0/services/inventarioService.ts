@@ -1,3 +1,5 @@
+import authService from './authService';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL || 'http://localhost:8082';
 
 // =====================================
@@ -78,12 +80,9 @@ class InventarioService {
 
     private async makeRequest<T>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
         try {
-            const token = localStorage.getItem('token');
-
             const response = await fetch(`${API_BASE_URL}${url}`, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: token ? `Bearer ${token}` : '',
+                    ...authService.getAuthHeaders(),
                     ...options.headers
                 },
                 ...options

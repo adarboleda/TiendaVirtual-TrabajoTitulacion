@@ -64,7 +64,7 @@ export default function AdministradorLayout({
                     <i className="pi pi-lock text-6xl text-red-500 mb-4"></i>
                     <div className="text-xl font-bold text-900 mb-2">Sesión requerida</div>
                     <div className="text-600 mb-4">Necesitas iniciar sesión para acceder</div>
-                    <a href="/(full-page)/auth/login" className="p-button p-button-primary">
+                    <a href="/(full-page)/auth/login2" className="p-button p-button-primary">
                         Ir a Login
                     </a>
                 </div>

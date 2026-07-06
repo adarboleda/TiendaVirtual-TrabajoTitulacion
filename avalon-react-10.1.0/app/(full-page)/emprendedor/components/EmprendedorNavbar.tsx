@@ -51,7 +51,7 @@ export default function EmprendedorNavbar({ layoutConfig, setLayoutConfig }: Emp
             command: () => {
                 // ✅ CORREGIDO: Usar authService y ir al login morado correcto
                 authService.logout();
-                router.push('/auth/login');
+                router.push('/auth/login2');
             }
         }
     ];

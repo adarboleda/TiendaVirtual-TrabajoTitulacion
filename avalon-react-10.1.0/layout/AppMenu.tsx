@@ -236,12 +236,12 @@ const AppMenu = () => {
                         {
                             label: 'Login',
                             icon: 'pi pi-fw pi-sign-in',
-                            to: '/auth/login'
+                            to: '/auth/login2'
                         },
                         {
                             label: 'Login 2',
                             icon: 'pi pi-fw pi-sign-in',
-                            to: '/auth/login'
+                            to: '/auth/login2'
                         },
                         {
                             label: 'Error',

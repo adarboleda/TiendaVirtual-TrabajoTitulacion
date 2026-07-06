@@ -316,7 +316,7 @@ class AuthService {
             console.log('🔓 Sesión cerrada');
 
             // ✅ CORREGIDO: Redirigir al login morado correcto
-            window.location.href = '/auth/login';
+            window.location.href = '/auth/login2';
         }
     }
 
