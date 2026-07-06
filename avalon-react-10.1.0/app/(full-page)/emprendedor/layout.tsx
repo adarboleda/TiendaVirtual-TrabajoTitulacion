@@ -25,22 +25,28 @@ const EmprendedorLayoutContent: React.FC<EmprendedorLayoutProps> = ({ children }
             const authenticated = authService.isAuthenticated();
             const isEmployee = authService.isEmployee();
             
-            console.log('🔍 Verificando emprendedor:', { 
-                authenticated, 
-                isEmployee, 
-                userType: authService.getUserType(),
-                userInfo: authService.getUserInfo()
-            });
-            
-            if (!authenticated || !isEmployee) {
-                console.log('❌ No autorizado para emprendedor, redirigiendo...');
-                // ✅ CORREGIDO: Ir al login morado correcto
-                router.push('/(full-page)/auth/login');
-                return;
+            try {
+                
+                console.log('🔍 Verificando emprendedor:', { 
+                    authenticated, 
+                    isEmployee, 
+                    userType: authService.getUserType(),
+                    userInfo: authService.getUserInfo()
+                });
+                
+                if (!authenticated || !isEmployee) {
+                    console.log('❌ No autorizado para emprendedor, redirigiendo...');
+                    authService.logout();
+                    router.push('/auth/login2');
+                    return;
+                }
+                
+                setIsAuthenticated(true);
+                setMounted(true);
+            } catch (error) {
+                console.error('Error verificando autenticación:', error);
+                router.push('/auth/login2');
             }
-            
-            setIsAuthenticated(true);
-            setMounted(true);
         };
 
         checkAuth();
