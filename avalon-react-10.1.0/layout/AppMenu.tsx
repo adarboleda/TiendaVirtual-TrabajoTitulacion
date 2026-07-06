@@ -241,7 +241,7 @@ const AppMenu = () => {
                         {
                             label: 'Login 2',
                             icon: 'pi pi-fw pi-sign-in',
-                            to: '/auth/login2'
+                            to: '/auth/login'
                         },
                         {
                             label: 'Error',

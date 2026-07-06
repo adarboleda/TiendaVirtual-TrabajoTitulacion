@@ -54,7 +54,7 @@ class ProductService {
     private readonly INVENTARIO_URL = process.env.NEXT_PUBLIC_INVENTARIO_API_URL || 'http://localhost:8082/api/inventarios';
     private cache: Map<string, { data: any; timestamp: number }> = new Map();
     private stockCache: Map<number, number> = new Map(); // Cache específico para stock
-    private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+    private readonly CACHE_DURATION = 2 * 60 * 1000; // 2 minutos (reducido para que el stock se actualice más frecuentemente)
 
     /**
      * ✅ OBTENER STOCK DE UN PRODUCTO (con mejor manejo de errores)
@@ -168,9 +168,14 @@ class ProductService {
         const cacheKey = 'productos_base';
         const cached = this.cache.get(cacheKey);
 
+        // ✅ Limpiar caché de stock en cada carga para forzar consulta fresca al inventario
+        this.stockCache.clear();
+
         // Usar caché si existe
         if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
             console.log('📦 Productos desde caché');
+            // Aun con caché, forzar actualización de stock en segundo plano
+            this.actualizarStockEnSegundoPlano(cached.data);
             return {
                 success: true,
                 data: cached.data,
@@ -252,7 +257,7 @@ class ProductService {
                             inventario: producto.inventario || {
                                 id: 0,
                                 productoId: producto.id,
-                                cantidad: 0, // Por defecto 0, se actualizará después
+                                cantidad: -1, // -1 = consultando, se actualizará con el batch
                                 activo: false,
                                 ubicacion: 'Consultando...',
                                 fechaCreacion: '',
@@ -357,6 +362,8 @@ class ProductService {
      * ✅ VALIDACIONES DE STOCK SIMPLIFICADAS
      */
     tieneStock(producto: ProductoResponse): boolean {
+        // ✅ -1 = consultando: no mostrar como sin stock todavía
+        if (producto.inventario && producto.inventario.cantidad === -1) return true;
         const cantidad = this.getCantidadDisponible(producto);
         return cantidad > 0;
     }
@@ -364,6 +371,8 @@ class ProductService {
     getCantidadDisponible(producto: ProductoResponse): number {
         if (!producto.inventario) return 0;
         if (typeof producto.inventario.cantidad !== 'number') return 0;
+        // ✅ -1 = consultando, tratar como 0 para cálculos
+        if (producto.inventario.cantidad === -1) return 0;
         return Math.max(0, producto.inventario.cantidad);
     }
 
@@ -377,6 +386,8 @@ class ProductService {
     }
 
     getMensajeStock(producto: ProductoResponse): string {
+        // ✅ -1 significa que el stock está siendo consultado (aún no llega el batch)
+        if (producto.inventario && producto.inventario.cantidad === -1) return 'Consultando stock...';
         const cantidad = this.getCantidadDisponible(producto);
 
         if (cantidad === 0) return 'No disponible';

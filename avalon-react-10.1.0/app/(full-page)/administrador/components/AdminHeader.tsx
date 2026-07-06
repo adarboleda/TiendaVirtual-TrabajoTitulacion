@@ -56,7 +56,7 @@ export default function AdminHeader() {
             command: () => {
                 // ✅ CORREGIDO: Usar authService y ir al login morado correcto
                 authService.logout();
-                router.push('/auth/login2');
+                router.push('/auth/login');
             }
         }
     ];

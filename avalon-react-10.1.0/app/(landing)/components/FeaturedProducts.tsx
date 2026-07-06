@@ -183,7 +183,7 @@ const FeaturedProducts: React.FC = () => {
 
     const handleLoginRedirect = () => {
         setShowLoginDialog(false);
-        router.push('/auth/login2');
+        router.push('/auth/login');
     };
 
     /**
@@ -191,6 +191,7 @@ const FeaturedProducts: React.FC = () => {
      */
     const renderProductCard = (producto: ProductoResponse) => {
         // ✅ VALIDACIONES DE STOCK SIMPLIFICADAS
+        const isConsultando = producto.inventario?.cantidad === -1;
         const hasStock = productService.tieneStock(producto);
         const nivelStock = productService.getNivelStock(producto);
         const mensajeStock = productService.getMensajeStock(producto);
@@ -347,12 +348,15 @@ const FeaturedProducts: React.FC = () => {
                     <div
                         className="flex align-items-center p-2 border-round-md"
                         style={{
-                            backgroundColor: hasStock ? `${primaryColor}08` : '#ef444408',
-                            border: `1px solid ${hasStock ? primaryColor : '#ef4444'}15`
+                            backgroundColor: isConsultando ? 'var(--surface-200)' : (hasStock ? `${primaryColor}08` : '#ef444408'),
+                            border: `1px solid ${isConsultando ? 'var(--surface-400)' : (hasStock ? primaryColor : '#ef4444')}15`
                         }}
                     >
-                        <i className={`pi ${hasStock ? 'pi-check-circle' : 'pi-times-circle'} mr-1 text-xs`} style={{ color: hasStock ? primaryColor : '#ef4444' }}></i>
-                        <small className="text-xs font-medium" style={{ color: hasStock ? primaryColor : '#ef4444' }}>
+                        <i
+                            className={`pi ${isConsultando ? 'pi-spin pi-spinner' : (hasStock ? 'pi-check-circle' : 'pi-times-circle')} mr-1 text-xs`}
+                            style={{ color: isConsultando ? 'var(--text-color-secondary)' : (hasStock ? primaryColor : '#ef4444') }}
+                        ></i>
+                        <small className="text-xs font-medium" style={{ color: isConsultando ? 'var(--text-color-secondary)' : (hasStock ? primaryColor : '#ef4444') }}>
                             {mensajeStock}
                         </small>
                     </div>

@@ -122,15 +122,15 @@ class CategoriasEmpresasService {
     // =====================================
     
     async obtenerCategorias(): Promise<ApiResponse<Categoria[]>> {
-        return this.makeRequest<Categoria[]>('/api/categorias');
+        return this.makeRequest<Categoria[]>('/categorias');
     }
 
     async obtenerCategoriaPorId(id: number): Promise<ApiResponse<Categoria>> {
-        return this.makeRequest<Categoria>(`/api/categorias/${id}`);
+        return this.makeRequest<Categoria>(`/categorias/${id}`);
     }
 
     async crearCategoria(categoria: CategoriaRequest): Promise<ApiResponse<Categoria>> {
-        return this.makeRequest<Categoria>('/api/categorias', {
+        return this.makeRequest<Categoria>('/categorias', {
             method: 'POST',
             body: JSON.stringify({
                 ...categoria,
@@ -140,14 +140,14 @@ class CategoriasEmpresasService {
     }
 
     async actualizarCategoria(id: number, categoria: CategoriaRequest): Promise<ApiResponse<Categoria>> {
-        return this.makeRequest<Categoria>(`/api/categorias/${id}`, {
+        return this.makeRequest<Categoria>(`/categorias/${id}`, {
             method: 'PUT',
             body: JSON.stringify(categoria),
         });
     }
 
     async eliminarCategoria(id: number): Promise<ApiResponse<void>> {
-        return this.makeRequest<void>(`/api/categorias/${id}`, {
+        return this.makeRequest<void>(`/categorias/${id}`, {
             method: 'DELETE',
         });
     }
@@ -157,15 +157,15 @@ class CategoriasEmpresasService {
     // =====================================
     
     async obtenerEmpresas(): Promise<ApiResponse<Empresa[]>> {
-        return this.makeRequest<Empresa[]>('/api/empresas');
+        return this.makeRequest<Empresa[]>('/empresas');
     }
 
     async obtenerEmpresaPorId(id: number): Promise<ApiResponse<Empresa>> {
-        return this.makeRequest<Empresa>(`/api/empresas/${id}`);
+        return this.makeRequest<Empresa>(`/empresas/${id}`);
     }
 
     async crearEmpresa(empresa: EmpresaRequest): Promise<ApiResponse<Empresa>> {
-        return this.makeRequest<Empresa>('/api/empresas', {
+        return this.makeRequest<Empresa>('/empresas', {
             method: 'POST',
             body: JSON.stringify({
                 ...empresa,
@@ -175,14 +175,14 @@ class CategoriasEmpresasService {
     }
 
     async actualizarEmpresa(id: number, empresa: EmpresaRequest): Promise<ApiResponse<Empresa>> {
-        return this.makeRequest<Empresa>(`/api/empresas/${id}`, {
+        return this.makeRequest<Empresa>(`/empresas/${id}`, {
             method: 'PUT',
             body: JSON.stringify(empresa),
         });
     }
 
     async eliminarEmpresa(id: number): Promise<ApiResponse<void>> {
-        return this.makeRequest<void>(`/api/empresas/${id}`, {
+        return this.makeRequest<void>(`/empresas/${id}`, {
             method: 'DELETE',
         });
     }

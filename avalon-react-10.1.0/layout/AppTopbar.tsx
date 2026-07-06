@@ -60,7 +60,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
 
                     // Redirigir al login después de un breve delay
                     setTimeout(() => {
-                        router.push('/auth/login2');
+                        router.push('/auth/login');
                     }, 1000);
 
                 } catch (error) {

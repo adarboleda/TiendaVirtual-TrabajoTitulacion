@@ -261,7 +261,7 @@ const ProductosPage: React.FC = () => {
 
     const handleLoginRedirect = () => {
         setShowLoginDialog(false);
-        router.push('/auth/login2');
+        router.push('/auth/login');
     };
 
     // ✅ NUEVO: Función para mostrar modal de producto

@@ -98,7 +98,7 @@ const CheckoutPage: React.FC = () => {
                     detail: 'Debes iniciar sesión para acceder al checkout',
                     life: 3000
                 });
-                router.push('/auth/login2');
+                router.push('/auth/login');
                 return;
             }
         };

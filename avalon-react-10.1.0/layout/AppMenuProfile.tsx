@@ -85,7 +85,7 @@ const AppMenuProfile = () => {
                                 </button>
                             </li>
                             <li>
-                                <button className="p-link" onClick={() => router.push('/auth/login2')}>
+                                <button className="p-link" onClick={() => router.push('/auth/login')}>
                                     <i className="pi pi-power-off pi-fw"></i>
                                     <span className={hiddenClassName}>Logout</span>
                                 </button>

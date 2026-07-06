@@ -15,7 +15,7 @@ const HeroSection: React.FC = () => {
         if (isAuthenticated) {
             document.getElementById('productos-destacados')?.scrollIntoView({ behavior: 'smooth' });
         } else {
-            router.push('/auth/login2');
+            router.push('/auth/login');
         }
     };
 
