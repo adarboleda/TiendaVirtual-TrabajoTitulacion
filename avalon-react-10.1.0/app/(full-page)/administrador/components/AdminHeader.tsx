@@ -36,16 +36,17 @@ export default function AdminHeader() {
         {
             label: 'Mi Perfil',
             icon: 'pi pi-user',
-            command: () => {
-                console.log('Ir a perfil');
-            }
+            command: () => router.push('/administrador/perfil')
         },
         {
             label: 'Configuración',
             icon: 'pi pi-cog',
-            command: () => {
-                console.log('Ir a configuración');
-            }
+            command: () => router.push('/administrador/usuarios')
+        },
+        {
+            label: 'Ver Tienda Pública',
+            icon: 'pi pi-external-link',
+            command: () => router.push('/')
         },
         {
             separator: true

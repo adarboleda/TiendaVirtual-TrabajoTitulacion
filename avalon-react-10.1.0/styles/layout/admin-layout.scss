@@ -1,0 +1,145 @@
+/* Estilos para el layout de administrador (responsive, igual patrón que emprendedor) */
+
+.admin-layout-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--surface-ground);
+}
+
+.admin-sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background-color: var(--surface-card);
+    border-right: 1px solid var(--surface-border);
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: transform 0.3s ease-in-out;
+}
+
+.admin-content-wrapper {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.admin-topbar {
+    background-color: var(--surface-card);
+    border-bottom: 1px solid var(--surface-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 997;
+    width: 100%;
+}
+
+.admin-main {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    background-color: var(--surface-ground);
+    overflow: auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-main-content {
+    max-width: 100%;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Responsive */
+@media screen and (max-width: 991px) {
+    .admin-sidebar {
+        transform: translateX(-100%);
+    }
+
+    .admin-sidebar.active {
+        transform: translateX(0);
+    }
+
+    .admin-content-wrapper {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .admin-main {
+        padding: 1.5rem 1rem;
+    }
+}
+
+@media screen and (max-width: 575px) {
+    .admin-main {
+        padding: 1rem 0.75rem;
+    }
+}
+
+/* Prevenir scroll horizontal */
+.admin-layout-wrapper,
+.admin-content-wrapper,
+.admin-main,
+.admin-main-content {
+    overflow-x: hidden;
+}
+
+/* Ajustes para las cards/tablas dentro del layout */
+.admin-main-content .p-card {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.admin-main-content .p-datatable {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Botón para abrir sidebar en móvil */
+.admin-sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    background-color: var(--red-500);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media screen and (max-width: 991px) {
+    .admin-sidebar-toggle {
+        display: flex;
+    }
+}
+
+/* Overlay para cerrar sidebar en móvil */
+.admin-sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 998;
+}
+
+@media screen and (max-width: 991px) {
+    .admin-sidebar-overlay.active {
+        display: block;
+    }
+}

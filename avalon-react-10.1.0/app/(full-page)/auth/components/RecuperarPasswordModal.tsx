@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
@@ -13,24 +13,38 @@ interface RecuperarPasswordModalProps {
     onHide: () => void;
     /** Se invoca cuando la contraseña fue restablecida con éxito */
     onSuccess?: () => void;
+    /** Precarga el usuario (p. ej. cuando se abre desde "Mi cuenta" ya autenticado) */
+    initialUsername?: string;
 }
 
-export default function RecuperarPasswordModal({ visible, onHide, onSuccess }: RecuperarPasswordModalProps) {
+type Paso = 'usuario' | 'codigo' | 'nueva-password' | 'listo';
+
+export default function RecuperarPasswordModal({ visible, onHide, onSuccess, initialUsername }: RecuperarPasswordModalProps) {
+    const [paso, setPaso] = useState<Paso>('usuario');
     const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
+
+    useEffect(() => {
+        if (visible && initialUsername) {
+            setUsername(initialUsername);
+        }
+    }, [visible, initialUsername]);
+    const [codigo, setCodigo] = useState('');
+    const [resetToken, setResetToken] = useState('');
     const [nuevaPassword, setNuevaPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [info, setInfo] = useState('');
 
     const resetForm = () => {
+        setPaso('usuario');
         setUsername('');
-        setEmail('');
+        setCodigo('');
+        setResetToken('');
         setNuevaPassword('');
         setConfirmPassword('');
         setError('');
-        setSuccess('');
+        setInfo('');
     };
 
     const handleClose = () => {
@@ -38,17 +52,56 @@ export default function RecuperarPasswordModal({ visible, onHide, onSuccess }: R
         onHide();
     };
 
-    const handleSubmit = async () => {
+    // Paso 1: solicitar código al correo registrado
+    const handleSolicitarCodigo = async () => {
         setError('');
-
         if (!username.trim()) {
             setError('El nombre de usuario es requerido');
             return;
         }
-        if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            setError('Ingresa el correo electrónico asociado a tu cuenta');
+
+        setLoading(true);
+        try {
+            const result = await authService.solicitarCodigoRecuperacion(username.trim());
+            if (result.success) {
+                // Se avanza igual exista o no la cuenta (no revelamos esa información)
+                setInfo(result.message || 'Si el usuario existe, se envió un código a su correo registrado.');
+                setPaso('codigo');
+            } else {
+                // Falla real (p. ej. sin conexión con el servidor): no avanzar
+                setError(result.message);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Paso 2: verificar el código de 6 dígitos recibido por correo
+    const handleVerificarCodigo = async () => {
+        setError('');
+        if (!/^\d{6}$/.test(codigo.trim())) {
+            setError('Ingresa el código de 6 dígitos que recibiste por correo');
             return;
         }
+
+        setLoading(true);
+        try {
+            const result = await authService.verificarCodigoRecuperacion(username.trim(), codigo.trim());
+            if (result.success && result.resetToken) {
+                setResetToken(result.resetToken);
+                setInfo('');
+                setPaso('nueva-password');
+            } else {
+                setError(result.message);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Paso 3: definir la nueva contraseña usando el token emitido en el paso anterior
+    const handleRestablecer = async () => {
+        setError('');
         if (nuevaPassword.length < 6) {
             setError('La nueva contraseña debe tener al menos 6 caracteres');
             return;
@@ -60,18 +113,13 @@ export default function RecuperarPasswordModal({ visible, onHide, onSuccess }: R
 
         setLoading(true);
         try {
-            const result = await authService.recuperarPassword(
-                username.trim(),
-                email.trim().toLowerCase(),
-                nuevaPassword
-            );
-
+            const result = await authService.restablecerPasswordConToken(username.trim(), resetToken, nuevaPassword);
             if (result.success) {
-                setSuccess(result.message);
+                setPaso('listo');
                 setTimeout(() => {
                     handleClose();
                     onSuccess?.();
-                }, 2500);
+                }, 2200);
             } else {
                 setError(result.message);
             }
@@ -99,82 +147,127 @@ export default function RecuperarPasswordModal({ visible, onHide, onSuccess }: R
         >
             <div className="flex flex-column gap-4 p-3">
                 {error && <Message severity="error" text={error} />}
-                {success && <Message severity="success" text={success} />}
+                {info && paso === 'codigo' && <Message severity="success" text={info} />}
 
-                <div
-                    className="text-sm text-600 p-3 border-round flex align-items-start gap-2"
-                    style={{ backgroundColor: 'var(--surface-100)', border: '1px solid var(--surface-border)' }}
-                >
-                    <i className="pi pi-info-circle mt-1" style={{ color: 'var(--primary-color)' }}></i>
-                    <span>
-                        Ingresa tu usuario y el correo con el que te registraste para definir una nueva contraseña.
-                        Si creaste tu cuenta con Google, simplemente usa el botón <b>Continuar con Google</b> al iniciar sesión.
-                    </span>
-                </div>
+                {paso === 'usuario' && (
+                    <>
+                        <div
+                            className="text-sm text-600 p-3 border-round flex align-items-start gap-2"
+                            style={{ backgroundColor: 'var(--surface-100)', border: '1px solid var(--surface-border)' }}
+                        >
+                            <i className="pi pi-info-circle mt-1" style={{ color: 'var(--primary-color)' }}></i>
+                            <span>
+                                Ingresa tu nombre de usuario y te enviaremos un código temporal a tu correo registrado.
+                                Si creaste tu cuenta con Google, usa el botón <b>Continuar con Google</b> al iniciar sesión.
+                            </span>
+                        </div>
 
-                <div className="field">
-                    <label htmlFor="rec-username" className="block text-900 font-semibold mb-2">
-                        Nombre de Usuario *
-                    </label>
-                    <InputText
-                        id="rec-username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Tu nombre de usuario"
-                        disabled={loading || !!success}
-                    />
-                </div>
+                        <div className="field">
+                            <label htmlFor="rec-username" className="block text-900 font-semibold mb-2">
+                                Nombre de Usuario *
+                            </label>
+                            <InputText
+                                id="rec-username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Tu nombre de usuario"
+                                disabled={loading}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSolicitarCodigo()}
+                            />
+                        </div>
 
-                <div className="field">
-                    <label htmlFor="rec-email" className="block text-900 font-semibold mb-2">
-                        Correo Electrónico *
-                    </label>
-                    <InputText
-                        id="rec-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="ejemplo@correo.com"
-                        disabled={loading || !!success}
-                    />
-                </div>
+                        <Button
+                            label={loading ? 'Enviando…' : 'Enviar código'}
+                            icon={loading ? 'pi pi-spin pi-spinner' : 'pi pi-send'}
+                            onClick={handleSolicitarCodigo}
+                            disabled={loading}
+                        />
+                    </>
+                )}
 
-                <div className="field">
-                    <label htmlFor="rec-password" className="block text-900 font-semibold mb-2">
-                        Nueva Contraseña *
-                    </label>
-                    <Password
-                        id="rec-password"
-                        value={nuevaPassword}
-                        onChange={(e) => setNuevaPassword(e.target.value)}
-                        placeholder="Mínimo 6 caracteres"
-                        toggleMask
-                        feedback={false}
-                        disabled={loading || !!success}
-                    />
-                </div>
+                {paso === 'codigo' && (
+                    <>
+                        <div className="field">
+                            <label htmlFor="rec-codigo" className="block text-900 font-semibold mb-2">
+                                Código de verificación *
+                            </label>
+                            <InputText
+                                id="rec-codigo"
+                                value={codigo}
+                                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                placeholder="000000"
+                                inputMode="numeric"
+                                maxLength={6}
+                                disabled={loading}
+                                style={{ textAlign: 'center', letterSpacing: '0.4rem', fontSize: '1.3rem', fontWeight: 700 }}
+                                onKeyDown={(e) => e.key === 'Enter' && handleVerificarCodigo()}
+                            />
+                            <small className="text-600">Válido por 15 minutos.</small>
+                        </div>
 
-                <div className="field">
-                    <label htmlFor="rec-confirm" className="block text-900 font-semibold mb-2">
-                        Confirmar Nueva Contraseña *
-                    </label>
-                    <Password
-                        id="rec-confirm"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Repite la nueva contraseña"
-                        toggleMask
-                        feedback={false}
-                        disabled={loading || !!success}
-                    />
-                </div>
+                        <Button
+                            label={loading ? 'Verificando…' : 'Verificar código'}
+                            icon={loading ? 'pi pi-spin pi-spinner' : 'pi pi-check'}
+                            onClick={handleVerificarCodigo}
+                            disabled={loading}
+                        />
+                        <Button
+                            label="Reenviar código"
+                            icon="pi pi-refresh"
+                            className="p-button-text p-button-sm"
+                            onClick={handleSolicitarCodigo}
+                            disabled={loading}
+                        />
+                    </>
+                )}
 
-                <Button
-                    label={loading ? 'Restableciendo…' : 'Restablecer Contraseña'}
-                    icon={loading ? 'pi pi-spin pi-spinner' : 'pi pi-key'}
-                    onClick={handleSubmit}
-                    disabled={loading || !!success}
-                />
+                {paso === 'nueva-password' && (
+                    <>
+                        <Message severity="success" text="Código verificado. Ahora define tu nueva contraseña." />
+
+                        <div className="field">
+                            <label htmlFor="rec-password" className="block text-900 font-semibold mb-2">
+                                Nueva Contraseña *
+                            </label>
+                            <Password
+                                id="rec-password"
+                                value={nuevaPassword}
+                                onChange={(e) => setNuevaPassword(e.target.value)}
+                                placeholder="Mínimo 6 caracteres"
+                                toggleMask
+                                feedback={false}
+                                disabled={loading}
+                            />
+                        </div>
+
+                        <div className="field">
+                            <label htmlFor="rec-confirm" className="block text-900 font-semibold mb-2">
+                                Confirmar Nueva Contraseña *
+                            </label>
+                            <Password
+                                id="rec-confirm"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Repite la nueva contraseña"
+                                toggleMask
+                                feedback={false}
+                                disabled={loading}
+                                onKeyDown={(e) => e.key === 'Enter' && handleRestablecer()}
+                            />
+                        </div>
+
+                        <Button
+                            label={loading ? 'Restableciendo…' : 'Restablecer Contraseña'}
+                            icon={loading ? 'pi pi-spin pi-spinner' : 'pi pi-key'}
+                            onClick={handleRestablecer}
+                            disabled={loading}
+                        />
+                    </>
+                )}
+
+                {paso === 'listo' && (
+                    <Message severity="success" text="¡Contraseña actualizada! Ya puedes iniciar sesión." />
+                )}
             </div>
         </Dialog>
     );

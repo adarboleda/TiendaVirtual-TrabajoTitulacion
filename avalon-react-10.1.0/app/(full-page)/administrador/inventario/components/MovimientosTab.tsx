@@ -379,6 +379,7 @@ const MovimientosTab: React.FC<MovimientosTabProps> = ({ toast }) => {
                 header="Detalles del Movimiento"
                 visible={detailVisible}
                 style={{ width: '500px' }}
+                breakpoints={{ '960px': '90vw', '641px': '95vw' }}
                 modal
                 onHide={() => setDetailVisible(false)}
             >
@@ -433,6 +434,7 @@ const MovimientosTab: React.FC<MovimientosTabProps> = ({ toast }) => {
                 header="Registrar Nuevo Movimiento"
                 visible={nuevoMovimientoVisible}
                 style={{ width: '500px' }}
+                breakpoints={{ '960px': '90vw', '641px': '95vw' }}
                 modal
                 onHide={() => setNuevoMovimientoVisible(false)}
             >

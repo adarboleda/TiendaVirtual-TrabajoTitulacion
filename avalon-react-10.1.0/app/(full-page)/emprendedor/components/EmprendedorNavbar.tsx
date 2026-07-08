@@ -26,12 +26,12 @@ export default function EmprendedorNavbar({ layoutConfig, setLayoutConfig }: Emp
         {
             label: 'Información de la Cuenta',
             icon: 'pi pi-id-card',
-            command: () => router.push('/emprendedor/cuenta')
+            command: () => router.push('/emprendedor/perfil')
         },
         {
             label: 'Configuración',
             icon: 'pi pi-cog',
-            command: () => router.push('/emprendedor/configuracion')
+            command: () => router.push('/emprendedor/configuracion-pagos')
         },
         { separator: true },
         {

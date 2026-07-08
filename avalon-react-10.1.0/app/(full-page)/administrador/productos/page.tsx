@@ -434,6 +434,7 @@ const ProductosPage: React.FC = () => {
                 header="Detalles del Producto"
                 visible={productDetailVisible}
                 style={{ width: '600px' }}
+                breakpoints={{ '960px': '90vw', '641px': '95vw' }}
                 modal
                 onHide={() => setProductDetailVisible(false)}
             >

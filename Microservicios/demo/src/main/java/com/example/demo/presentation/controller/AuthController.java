@@ -3,6 +3,7 @@ package com.example.demo.presentation.controller;
 import com.example.demo.application.dto.*;
 import com.example.demo.application.mapper.UsuarioMapper;
 import com.example.demo.application.service.AuthService;
+import com.example.demo.application.service.PasswordResetService;
 import com.example.demo.domain.model.Usuario;
 import com.example.demo.domain.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +33,7 @@ public class AuthController {
     private final UsuarioService usuarioService;
     private final AuthService authService;
     private final UsuarioMapper usuarioMapper;
+    private final PasswordResetService passwordResetService;
 
     // =====================================
     // ENDPOINTS DE AUTENTICACIÓN PÚBLICA
@@ -91,21 +93,42 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/auth/recuperar-password")
-    @Operation(summary = "Recuperar contraseña",
-            description = "Restablece la contraseña validando que el username y el email registrados coincidan")
-    public ResponseEntity<?> recuperarPassword(@Valid @RequestBody RecuperarPasswordDto recuperarDto) {
-        boolean actualizado = usuarioService.restablecerPassword(
-                recuperarDto.getUsername(),
-                recuperarDto.getEmail(),
-                recuperarDto.getNuevaPassword());
+    // =====================================
+    // RECUPERACIÓN DE CONTRASEÑA (código temporal por correo)
+    // =====================================
 
-        if (actualizado) {
-            return ResponseEntity.ok(java.util.Map.of("message", "Contraseña actualizada exitosamente"));
+    @PostMapping("/auth/recuperar-password/solicitar")
+    @Operation(summary = "Solicitar código de recuperación",
+            description = "Envía un código temporal de 6 dígitos al correo registrado del usuario (válido 15 min)")
+    public ResponseEntity<?> solicitarCodigoRecuperacion(@Valid @RequestBody SolicitarCodigoDto dto) {
+        passwordResetService.solicitarCodigo(dto.getUsername());
+        // Respuesta genérica: no revela si el usuario existe o no
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", "Si el usuario existe, se envió un código a su correo registrado"));
+    }
+
+    @PostMapping("/auth/recuperar-password/verificar")
+    @Operation(summary = "Verificar código de recuperación",
+            description = "Valida el código recibido por correo y emite un token de restablecimiento de un solo uso")
+    public ResponseEntity<?> verificarCodigoRecuperacion(@Valid @RequestBody VerificarCodigoDto dto) {
+        try {
+            String resetToken = passwordResetService.verificarCodigo(dto.getUsername(), dto.getCodigo());
+            return ResponseEntity.ok(java.util.Map.of("resetToken", resetToken));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         }
+    }
 
-        return ResponseEntity.badRequest()
-                .body(java.util.Map.of("message", "Los datos no coinciden con ninguna cuenta registrada"));
+    @PostMapping("/auth/recuperar-password/restablecer")
+    @Operation(summary = "Restablecer contraseña",
+            description = "Consume el token de restablecimiento emitido tras verificar el código y define la nueva contraseña")
+    public ResponseEntity<?> restablecerPasswordConToken(@Valid @RequestBody RestablecerConTokenDto dto) {
+        try {
+            passwordResetService.restablecerPassword(dto.getUsername(), dto.getResetToken(), dto.getNuevaPassword());
+            return ResponseEntity.ok(java.util.Map.of("message", "Contraseña actualizada exitosamente"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
+        }
     }
 
     // =====================================

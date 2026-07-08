@@ -324,6 +324,7 @@ const EmpresasPage: React.FC = () => {
                 header="Detalles de la Empresa"
                 visible={detailVisible}
                 style={{ width: '600px' }}
+                breakpoints={{ '960px': '90vw', '641px': '95vw' }}
                 modal
                 onHide={() => setDetailVisible(false)}
             >

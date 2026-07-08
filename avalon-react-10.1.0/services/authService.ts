@@ -188,36 +188,64 @@ class AuthService {
     }
 
     /**
-     * Restablece la contraseña validando que username y email coincidan.
+     * Paso 1 de recuperación: solicita que se envíe un código temporal (6 dígitos)
+     * al correo registrado del usuario. Responde igual exista o no la cuenta.
      */
-    async recuperarPassword(username: string, email: string, nuevaPassword: string): Promise<{ success: boolean; message: string }> {
+    async solicitarCodigoRecuperacion(username: string): Promise<{ success: boolean; message: string }> {
+        return this.postRecuperacion('/recuperar-password/solicitar', { username }, 'No se pudo enviar el código. Intenta nuevamente.');
+    }
+
+    /**
+     * Paso 2: valida el código recibido por correo. Si es correcto, el backend
+     * emite un token de restablecimiento de un solo uso (válido ~10 minutos).
+     */
+    async verificarCodigoRecuperacion(username: string, codigo: string): Promise<{ success: boolean; message: string; resetToken?: string }> {
+        const result = await this.postRecuperacion<{ resetToken?: string }>(
+            '/recuperar-password/verificar',
+            { username, codigo },
+            'Código inválido o expirado.'
+        );
+        return { ...result, resetToken: result.data?.resetToken };
+    }
+
+    /**
+     * Paso 3: consume el token del paso anterior y define la nueva contraseña.
+     */
+    async restablecerPasswordConToken(username: string, resetToken: string, nuevaPassword: string): Promise<{ success: boolean; message: string }> {
+        return this.postRecuperacion(
+            '/recuperar-password/restablecer',
+            { username, resetToken, nuevaPassword },
+            'No se pudo restablecer la contraseña. Intenta nuevamente.'
+        );
+    }
+
+    private async postRecuperacion<T = unknown>(
+        path: string,
+        body: Record<string, string>,
+        defaultErrorMessage: string
+    ): Promise<{ success: boolean; message: string; data?: T }> {
         try {
-            const response = await fetch(`${this.API_URL}/recuperar-password`, {
+            const response = await fetch(`${this.API_URL}${path}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, email, nuevaPassword })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
 
-            if (response.ok) {
-                return { success: true, message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión.' };
-            }
-
-            let message = 'No se pudo restablecer la contraseña. Verifica tus datos.';
+            let payload: any = {};
             try {
-                const errorData = await response.json();
-                message = errorData.message || message;
+                payload = await response.json();
             } catch (e) {
                 // respuesta sin cuerpo JSON
             }
-            return { success: false, message };
+
+            if (response.ok) {
+                return { success: true, message: payload.message || 'Listo', data: payload };
+            }
+
+            return { success: false, message: payload.message || defaultErrorMessage };
         } catch (error) {
             console.error('🚨 Error de conexión en recuperación:', error);
-            return {
-                success: false,
-                message: 'Error de conexión con el servicio de autenticación.'
-            };
+            return { success: false, message: 'Error de conexión con el servicio de autenticación.' };
         }
     }
 

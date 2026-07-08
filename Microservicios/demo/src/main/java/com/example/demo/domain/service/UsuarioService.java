@@ -17,13 +17,6 @@ public interface UsuarioService {
     Usuario registrarUsuarioConRoles(Usuario usuario);
     Optional<Usuario> buscarPorEmail(String email);
 
-    /**
-     * Restablece la contraseña de un usuario validando que el username
-     * y el email registrados coincidan.
-     * @return true si la contraseña fue actualizada, false si los datos no coinciden
-     */
-    boolean restablecerPassword(String username, String email, String nuevaPassword);
-
     // =====================================
     // MÉTODOS NUEVOS PARA GESTIÓN ADMIN
     // =====================================

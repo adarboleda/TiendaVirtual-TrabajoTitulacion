@@ -293,6 +293,7 @@ const CategoriasPage: React.FC = () => {
                 header="Detalles de la Categoría"
                 visible={detailVisible}
                 style={{ width: '500px' }}
+                breakpoints={{ '960px': '90vw', '641px': '95vw' }}
                 modal
                 onHide={() => setDetailVisible(false)}
             >

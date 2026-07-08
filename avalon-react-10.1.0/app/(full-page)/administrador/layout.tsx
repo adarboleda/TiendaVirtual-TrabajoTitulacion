@@ -11,6 +11,7 @@ export default function AdministradorLayout({
 }) {
     const [loading, setLoading] = useState(true);
     const [tieneToken, setTieneToken] = useState(false);
+    const [sidebarActive, setSidebarActive] = useState(false);
 
     useEffect(() => {
         const verificarToken = () => {
@@ -72,78 +73,39 @@ export default function AdministradorLayout({
         );
     }
 
+    const toggleSidebar = () => setSidebarActive((prev) => !prev);
+    const closeSidebar = () => setSidebarActive(false);
+
     return (
-        <div 
-            className="layout-wrapper"
-            style={{ 
-                backgroundColor: 'var(--surface-ground)',
-                minHeight: '100vh',
-                display: 'flex'
-            }}
-        >
-            {/* ✅ SIDEBAR IZQUIERDO - IGUAL QUE EMPRENDEDOR */}
-            <div 
-                className="layout-sidebar"
-                style={{
-                    width: '260px',
-                    minHeight: '100vh',
-                    backgroundColor: 'var(--surface-card)',
-                    borderRight: '1px solid var(--surface-border)',
-                    boxShadow: '2px 0 4px rgba(0,0,0,0.08)',
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    zIndex: 999,
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}
+        <div className="admin-layout-wrapper">
+            {/* Botón para abrir sidebar en móvil */}
+            <button
+                className="admin-sidebar-toggle"
+                onClick={toggleSidebar}
+                aria-label="Abrir menú"
             >
-                <AdministradorSidebar />
+                <i className="pi pi-bars"></i>
+            </button>
+
+            {/* Overlay para cerrar sidebar en móvil */}
+            <div
+                className={`admin-sidebar-overlay ${sidebarActive ? 'active' : ''}`}
+                onClick={closeSidebar}
+            ></div>
+
+            {/* Sidebar */}
+            <div className={`admin-sidebar ${sidebarActive ? 'active' : ''}`}>
+                <AdministradorSidebar onNavigate={closeSidebar} />
             </div>
 
-            {/* ✅ CONTENIDO PRINCIPAL - IGUAL QUE EMPRENDEDOR */}
-            <div 
-                className="layout-content"
-                style={{
-                    marginLeft: '260px',
-                    width: 'calc(100% - 260px)',
-                    minHeight: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}
-            >
-                {/* ✅ NAVBAR SUPERIOR - IGUAL QUE EMPRENDEDOR */}
-                <div 
-                    className="layout-topbar"
-                    style={{
-                        backgroundColor: 'var(--surface-card)',
-                        borderBottom: '1px solid var(--surface-border)',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 997
-                    }}
-                >
+            {/* Contenido principal */}
+            <div className="admin-content-wrapper">
+                <div className="admin-topbar">
                     <AdminHeader />
                 </div>
 
-                {/* ✅ ÁREA DE CONTENIDO PRINCIPAL - IGUAL QUE EMPRENDEDOR */}
-                <div 
-                    className="layout-main"
-                    style={{
-                        flex: 1,
-                        padding: '1.5rem 2rem',
-                        backgroundColor: 'var(--surface-ground)',
-                        overflow: 'auto'
-                    }}
-                >
-                    <div 
-                        className="layout-main-content"
-                        style={{
-                            maxWidth: '100%',
-                            margin: '0 auto'
-                        }}
-                    >
+                <div className="admin-main">
+                    <div className="admin-main-content">
                         {children}
                     </div>
                 </div>

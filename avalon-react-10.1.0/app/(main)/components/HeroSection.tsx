@@ -143,9 +143,9 @@ const HeroSection: React.FC = () => {
                 }
                 .hero-mascot {
                     position: absolute;
-                    right: clamp(0px, 3vw, 60px);
-                    bottom: 0;
-                    width: clamp(140px, 15vw, 230px);
+                    top: 28px;
+                    right: clamp(10px, 4vw, 90px);
+                    width: clamp(100px, 10vw, 160px);
                     z-index: 3;
                     cursor: pointer;
                     animation: mascotFloat 4.5s ease-in-out infinite;
@@ -162,14 +162,15 @@ const HeroSection: React.FC = () => {
                 }
                 .hero-mascot-bubble {
                     position: absolute;
-                    top: 6px;
-                    right: 105%;
+                    top: calc(100% + 10px);
+                    left: 50%;
+                    transform: translateX(-58%);
                     white-space: nowrap;
                     background: white;
                     color: var(--text-color);
                     padding: 0.6rem 1.1rem;
                     border-radius: 1.2rem;
-                    border-bottom-right-radius: 0.2rem;
+                    border-top-left-radius: 0.2rem;
                     font-size: 0.9rem;
                     font-weight: 600;
                     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
@@ -181,7 +182,7 @@ const HeroSection: React.FC = () => {
                     opacity: 1;
                     animation: bubblePop 0.25s ease;
                 }
-                @media (max-width: 1024px) {
+                @media (max-width: 1280px) {
                     .hero-mascot {
                         display: none;
                     }

@@ -1,19 +1,17 @@
 package com.example.demo.application.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class RecuperarPasswordDto {
+public class RestablecerConTokenDto {
 
-    @NotBlank(message = "El username es requerido")
+    @NotBlank(message = "El nombre de usuario es requerido")
     private String username;
 
-    @NotBlank(message = "El email es requerido")
-    @Email(message = "El email no tiene un formato válido")
-    private String email;
+    @NotBlank(message = "El token de restablecimiento es requerido")
+    private String resetToken;
 
     @NotBlank(message = "La nueva contraseña es requerida")
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")

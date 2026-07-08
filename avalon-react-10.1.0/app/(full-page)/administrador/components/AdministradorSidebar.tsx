@@ -5,7 +5,12 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Button } from 'primereact/button';
 import { Badge } from 'primereact/badge';
 
-export default function AdministradorSidebar() {
+interface AdministradorSidebarProps {
+    /** Se invoca al navegar (usado para cerrar el sidebar en móvil) */
+    onNavigate?: () => void;
+}
+
+export default function AdministradorSidebar({ onNavigate }: AdministradorSidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
 
@@ -63,6 +68,7 @@ export default function AdministradorSidebar() {
 
     const handleNavigation = (url: string) => {
         router.push(url);
+        onNavigate?.();
     };
 
     return (
@@ -75,9 +81,9 @@ export default function AdministradorSidebar() {
                 className="sidebar-header p-4 border-bottom-1 surface-border"
                 style={{ borderColor: 'var(--surface-border)' }}
             >
-                <div 
+                <div
                     className="flex align-items-center cursor-pointer"
-                    onClick={() => router.push('/administrador')}
+                    onClick={() => handleNavigation('/administrador')}
                 >
                     <div 
                         className="w-3rem h-3rem border-circle flex align-items-center justify-content-center mr-3"

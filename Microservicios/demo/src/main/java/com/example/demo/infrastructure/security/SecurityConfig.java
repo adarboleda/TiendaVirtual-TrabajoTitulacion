@@ -41,7 +41,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/registro", "/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/google", "/api/auth/recuperar-password").permitAll()
+                        .requestMatchers("/api/auth/google").permitAll()
+                        .requestMatchers("/api/auth/recuperar-password/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         // Endpoints públicos para clientes en el checkout
                         .requestMatchers("/api/emprendedor/configuracion-pagos/payphone/*").permitAll()
