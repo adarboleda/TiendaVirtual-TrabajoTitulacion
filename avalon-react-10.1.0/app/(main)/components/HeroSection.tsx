@@ -133,6 +133,59 @@ const HeroSection: React.FC = () => {
                         padding: 0 1rem;
                     }
                 }
+                @keyframes mascotFloat {
+                    0%, 100% { transform: translateY(0) rotate(-2deg); }
+                    50% { transform: translateY(-18px) rotate(2deg); }
+                }
+                @keyframes bubblePop {
+                    from { opacity: 0; transform: translateY(8px) scale(0.9); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .hero-mascot {
+                    position: absolute;
+                    right: clamp(0px, 3vw, 60px);
+                    bottom: 0;
+                    width: clamp(140px, 15vw, 230px);
+                    z-index: 3;
+                    cursor: pointer;
+                    animation: mascotFloat 4.5s ease-in-out infinite;
+                    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.45));
+                    transition: transform 0.3s ease;
+                }
+                .hero-mascot:hover {
+                    transform: scale(1.06);
+                }
+                .hero-mascot img {
+                    width: 100%;
+                    display: block;
+                    pointer-events: none;
+                }
+                .hero-mascot-bubble {
+                    position: absolute;
+                    top: 6px;
+                    right: 105%;
+                    white-space: nowrap;
+                    background: white;
+                    color: var(--text-color);
+                    padding: 0.6rem 1.1rem;
+                    border-radius: 1.2rem;
+                    border-bottom-right-radius: 0.2rem;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.25s ease;
+                }
+                .hero-mascot:hover .hero-mascot-bubble {
+                    opacity: 1;
+                    animation: bubblePop 0.25s ease;
+                }
+                @media (max-width: 1024px) {
+                    .hero-mascot {
+                        display: none;
+                    }
+                }
             `}</style>
 
             <section 
@@ -385,6 +438,24 @@ const HeroSection: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Mascota Zapallín - invita a explorar la tienda */}
+                <div
+                    className="hero-mascot"
+                    onClick={handleShopNow}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Zapallín, mascota de ECommerce Sigchos: haz clic para ver los productos"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') handleShopNow();
+                    }}
+                >
+                    <span className="hero-mascot-bubble">¡Mira nuestros productos! 🛒</span>
+                    <img
+                        src="/images/mascota/zapallin-carrito.png"
+                        alt="Zapallín, mascota de ECommerce Sigchos, empujando un carrito de compras"
+                    />
                 </div>
 
                 {/* Indicador de scroll */}

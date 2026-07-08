@@ -6,8 +6,8 @@ interface FullPageLayoutProps {
 }
 
 export const metadata: Metadata = {
-    title: 'PrimeReact Avalon',
-    description: 'The ultimate collection of design-agnostic, flexible and accessible React UI Components.'
+    title: 'Sigchos E-commerce',
+    description: 'Sigchos E-commerce — productos locales y turismo rural del cantón Sigchos, Cotopaxi.'
 };
 
 export default function FullPageLayout({ children }: FullPageLayoutProps) {

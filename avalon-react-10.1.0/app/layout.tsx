@@ -44,6 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <head>
                 <meta charSet="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>Sigchos E-commerce</title>
+                <meta name="description" content="Sigchos E-commerce — productos locales y turismo rural del cantón Sigchos, Cotopaxi." />
                 <link id="theme-link" href={`/theme/theme-light/purple/theme.css`} rel="stylesheet"></link>
             </head>
             <body suppressHydrationWarning>
