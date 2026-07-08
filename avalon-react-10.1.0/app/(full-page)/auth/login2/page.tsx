@@ -12,12 +12,18 @@ import type { Page } from '@/types';
 import { Checkbox } from 'primereact/checkbox';
 import { LayoutContext } from '../../../../layout/context/layoutcontext';
 import authService from '../../../../services/authService';
+import RegistroModal from '../../../(landing)/components/RegistroModal';
+import RecuperarPasswordModal from '../components/RecuperarPasswordModal';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const Login: Page = () => {
     const router = useRouter();
     const { layoutConfig } = useContext(LayoutContext);
     const [checked, setChecked] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
+    const [registroVisible, setRegistroVisible] = useState<boolean>(false);
+    const [recuperarVisible, setRecuperarVisible] = useState<boolean>(false);
+    const [googleLoading, setGoogleLoading] = useState<boolean>(false);
     const [credentials, setCredentials] = useState({
         username: '',
         password: ''
@@ -179,6 +185,38 @@ const Login: Page = () => {
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             handleLogin();
+        }
+    };
+
+    // Login / registro automático con Google
+    const handleGoogleCredential = async (idToken: string) => {
+        setGoogleLoading(true);
+        setErrors(prev => ({ ...prev, general: '' }));
+
+        try {
+            const result = await authService.loginWithGoogle(idToken);
+
+            if (result.success && result.data) {
+                const redirectPath = authService.getRedirectPath();
+                toast.current?.show({
+                    severity: 'success',
+                    summary: '¡Acceso autorizado!',
+                    detail: `¡Bienvenido, ${result.data.usuario?.nombre || result.data.usuario?.username || ''}! Redirigiendo…`,
+                    life: 2500
+                });
+                setTimeout(() => {
+                    router.push(redirectPath);
+                }, 1200);
+            } else {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error con Google',
+                    detail: result.message || 'No se pudo iniciar sesión con Google',
+                    life: 4000
+                });
+            }
+        } finally {
+            setGoogleLoading(false);
         }
     };
 
@@ -408,6 +446,32 @@ const Login: Page = () => {
                                 />
                             </div>
 
+                            {/* Acceso con Google */}
+                            <div className="field col-12 mb-2">
+                                <div className="flex align-items-center gap-3 mb-3">
+                                    <div className="flex-1" style={{ height: '1px', backgroundColor: 'var(--surface-border)' }}></div>
+                                    <span className="text-600 text-sm">o continúa con</span>
+                                    <div className="flex-1" style={{ height: '1px', backgroundColor: 'var(--surface-border)' }}></div>
+                                </div>
+                                {googleLoading ? (
+                                    <div className="flex justify-content-center">
+                                        <i className="pi pi-spin pi-spinner text-2xl" style={{ color: 'var(--green-500)' }}></i>
+                                    </div>
+                                ) : (
+                                    <GoogleLoginButton
+                                        onCredential={handleGoogleCredential}
+                                        onError={(msg) => {
+                                            toast.current?.show({
+                                                severity: 'warn',
+                                                summary: 'Google Sign-In',
+                                                detail: msg,
+                                                life: 4000
+                                            });
+                                        }}
+                                    />
+                                )}
+                            </div>
+
                             {/* Links adicionales */}
                             <div className="field col-12">
                                 <div className="flex justify-content-between align-items-center flex-wrap gap-3">
@@ -415,27 +479,13 @@ const Login: Page = () => {
                                         label="¿Olvidaste tu contraseña?"
                                         className="p-button-link p-0"
                                         style={{ color: 'var(--green-500)' }}
-                                        onClick={() => {
-                                            toast.current?.show({
-                                                severity: 'info',
-                                                summary: 'Próximamente',
-                                                detail: 'Esta función estará disponible pronto',
-                                                life: 3000
-                                            });
-                                        }}
+                                        onClick={() => setRecuperarVisible(true)}
                                     />
                                     <Button
                                         label="Crear cuenta"
                                         className="p-button-link p-0 font-bold"
                                         style={{ color: 'var(--green-600)' }}
-                                        onClick={() => {
-                                            toast.current?.show({
-                                                severity: 'info',
-                                                summary: 'Registro próximamente',
-                                                detail: 'El registro estará disponible pronto',
-                                                life: 3000
-                                            });
-                                        }}
+                                        onClick={() => setRegistroVisible(true)}
                                     />
                                 </div>
                             </div>
@@ -485,6 +535,29 @@ const Login: Page = () => {
                     />
                 </svg>
             </div>
+
+            {/* Modal de registro (Crear cuenta) */}
+            <RegistroModal
+                visible={registroVisible}
+                onHide={() => setRegistroVisible(false)}
+                onSuccess={() => {
+                    console.log('✅ Usuario registrado exitosamente desde login');
+                }}
+            />
+
+            {/* Modal de recuperación de contraseña */}
+            <RecuperarPasswordModal
+                visible={recuperarVisible}
+                onHide={() => setRecuperarVisible(false)}
+                onSuccess={() => {
+                    toast.current?.show({
+                        severity: 'success',
+                        summary: 'Contraseña actualizada',
+                        detail: 'Ya puedes iniciar sesión con tu nueva contraseña',
+                        life: 4000
+                    });
+                }}
+            />
         </>
     );
 };

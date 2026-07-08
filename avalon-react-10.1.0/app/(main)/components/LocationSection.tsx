@@ -8,6 +8,9 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { Toast } from 'primereact/toast';
 import { useRef, useState } from 'react';
 
+// Correo del administrador: destino de todos los mensajes de Ubicación y Contacto
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'soporte@ecommerce.com';
+
 const LocationSection: React.FC = () => {
     const toast = useRef<Toast>(null);
     const [contactForm, setContactForm] = useState({
@@ -18,7 +21,7 @@ const LocationSection: React.FC = () => {
 
     const handleContactSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!contactForm.name || !contactForm.email || !contactForm.message) {
             toast.current?.show({
                 severity: 'warn',
@@ -29,12 +32,20 @@ const LocationSection: React.FC = () => {
             return;
         }
 
-        // Simular envío
+        // Dirigir el mensaje automáticamente al correo del administrador
+        const subject = encodeURIComponent(`Contacto ECommerce Sigchos - ${contactForm.name}`);
+        const body = encodeURIComponent(
+            `Nombre: ${contactForm.name}\n` +
+            `Email de contacto: ${contactForm.email}\n\n` +
+            `Mensaje:\n${contactForm.message}`
+        );
+        window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
+
         toast.current?.show({
             severity: 'success',
-            summary: 'Mensaje enviado',
-            detail: 'Gracias por contactarnos. Te responderemos pronto.',
-            life: 3000
+            summary: 'Mensaje preparado',
+            detail: `Se abrirá tu correo para enviar el mensaje al administrador (${ADMIN_EMAIL}).`,
+            life: 4000
         });
 
         // Limpiar formulario
@@ -127,11 +138,11 @@ const LocationSection: React.FC = () => {
                                     <div>
                                         <h5 className="text-900 mb-2 font-semibold">Email</h5>
                                         <p className="text-600 m-0 line-height-3">
+                                            <a href={`mailto:${ADMIN_EMAIL}`} className="text-primary no-underline hover:underline">
+                                                {ADMIN_EMAIL}
+                                            </a><br/>
                                             <a href="mailto:gadmunicipal@gadmsigchos.gob.ec" className="text-primary no-underline hover:underline">
                                                 gadmunicipal@gadmsigchos.gob.ec
-                                            </a><br/>
-                                            <a href="mailto:soporte@ecommerce.com" className="text-primary no-underline hover:underline">
-                                                soporte@ecommerce.com
                                             </a>
                                         </p>
                                     </div>

@@ -56,13 +56,14 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             description: 'Paga con Payphone o tarjeta de crédito',
             color: '#f97316'
         },
-        {
-            value: 'tarjeta' as PaymentMethod,
-            label: 'Tarjeta de Crédito/Débito (Stripe)',
-            icon: 'pi-credit-card',
-            description: 'Paga de forma segura con tu tarjeta',
-            color: '#3b82f6'
-        },
+        // Stripe oculto temporalmente (se conserva el código para reactivarlo a futuro)
+        // {
+        //     value: 'tarjeta' as PaymentMethod,
+        //     label: 'Tarjeta de Crédito/Débito (Stripe)',
+        //     icon: 'pi-credit-card',
+        //     description: 'Paga de forma segura con tu tarjeta',
+        //     color: '#3b82f6'
+        // },
         {
             value: 'deuna' as PaymentMethod,
             label: 'Deuna',

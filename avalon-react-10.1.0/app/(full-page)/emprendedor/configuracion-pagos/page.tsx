@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from 'primereact/card';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { InputText } from 'primereact/inputtext';
+import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import { FileUpload, FileUploadHandlerEvent } from 'primereact/fileupload';
 import { Button } from 'primereact/button';
@@ -33,6 +34,7 @@ interface ConfiguracionPagos {
     datosBancarios?: DatosBancarios;
     qrDeunaUrl?: string;
     payphone?: PayphoneConfig;
+    costoEnvio?: number;
 }
 
 const bancos = [
@@ -73,6 +75,9 @@ export default function ConfiguracionMetodosPago() {
     const [payphoneAppId, setPayphoneAppId] = useState('');
     const [payphoneToken, setPayphoneToken] = useState('');
 
+    // Costo de envío (cuota fija, por defecto $5.00)
+    const [costoEnvio, setCostoEnvio] = useState<number>(5);
+
     const [errors, setErrors] = useState<any>({});
 
     useEffect(() => {
@@ -106,6 +111,10 @@ export default function ConfiguracionMetodosPago() {
                 if (data.payphone) {
                     setPayphoneAppId(data.payphone.payphoneAppId);
                     setPayphoneToken(data.payphone.payphoneToken);
+                }
+
+                if (data.costoEnvio !== undefined && data.costoEnvio !== null) {
+                    setCostoEnvio(Number(data.costoEnvio));
                 }
             }
         } catch (error) {
@@ -354,6 +363,52 @@ export default function ConfiguracionMetodosPago() {
         }
     };
 
+    const guardarCostoEnvio = async () => {
+        if (costoEnvio === null || costoEnvio === undefined || costoEnvio < 0) {
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Ingresa un costo de envío válido (mayor o igual a $0.00)',
+                life: 3000
+            });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('auth_token');
+            const apiBase = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
+            const response = await fetch(`${apiBase}/api/emprendedor/configuracion-pagos/costo-envio`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ costoEnvio })
+            });
+
+            if (response.ok) {
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: `Costo de envío actualizado a $${costoEnvio.toFixed(2)}`,
+                    life: 3000
+                });
+            } else {
+                throw new Error('Error al guardar');
+            }
+        } catch (error) {
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo actualizar el costo de envío',
+                life: 3000
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loadingData) {
         return (
             <div className="flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
@@ -493,6 +548,48 @@ export default function ConfiguracionMetodosPago() {
 
                             <div className="col-12">
                                 <Button label="Guardar Credenciales Payphone" icon="pi pi-save" onClick={guardarPayphone} loading={loading} className="mt-3" style={{ backgroundColor: '#f97316', borderColor: '#f97316' }} />
+                            </div>
+                        </div>
+                    </TabPanel>
+
+                    {/* Tab 4: Costo de Envío (solo el Emprendedor puede modificarlo) */}
+                    <TabPanel header="Costo de Envío" leftIcon="pi pi-truck mr-2">
+                        <div className="grid p-fluid">
+                            <div className="col-12 mb-4">
+                                <Message
+                                    severity="info"
+                                    text="Define la cuota fija de envío que se cobrará a tus clientes en cada pedido. El valor por defecto es $5.00."
+                                    className="w-full justify-content-start"
+                                />
+                            </div>
+
+                            <div className="col-12 md:col-6">
+                                <label htmlFor="costoEnvio" className="block font-semibold mb-2">
+                                    Cuota fija de envío (USD) *
+                                </label>
+                                <InputNumber
+                                    id="costoEnvio"
+                                    value={costoEnvio}
+                                    onValueChange={(e) => setCostoEnvio(e.value ?? 0)}
+                                    mode="currency"
+                                    currency="USD"
+                                    locale="en-US"
+                                    min={0}
+                                    max={100}
+                                    minFractionDigits={2}
+                                    maxFractionDigits={2}
+                                />
+                            </div>
+
+                            <div className="col-12">
+                                <Button
+                                    label="Guardar Costo de Envío"
+                                    icon="pi pi-save"
+                                    onClick={guardarCostoEnvio}
+                                    loading={loading}
+                                    className="mt-3"
+                                    style={{ backgroundColor: '#0ea5e9', borderColor: '#0ea5e9' }}
+                                />
                             </div>
                         </div>
                     </TabPanel>

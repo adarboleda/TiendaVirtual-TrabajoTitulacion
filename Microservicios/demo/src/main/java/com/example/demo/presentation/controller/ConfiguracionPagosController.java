@@ -161,6 +161,41 @@ public class ConfiguracionPagosController {
     }
 
     /**
+     * Guardar la cuota de envío (SOLO el rol Emprendedor puede modificarla)
+     */
+    @PutMapping("/costo-envio")
+    @PreAuthorize("hasRole('EMP')")
+    public ResponseEntity<ConfiguracionPagosDto> guardarCostoEnvio(
+            @jakarta.validation.Valid @RequestBody com.example.demo.application.dto.CostoEnvioDto costoEnvioDto,
+            Authentication authentication) {
+
+        Long emprendedorId = obtenerUsuarioId(authentication);
+        ConfiguracionPagosDto config = configuracionPagosService.guardarCostoEnvio(
+                emprendedorId, costoEnvioDto.getCostoEnvio());
+
+        return ResponseEntity.ok(config);
+    }
+
+    /**
+     * Obtener la cuota de envío de un emprendedor por empresa_id (público, para el checkout).
+     * Si el emprendedor no la configuró, devuelve la cuota fija de $5.00.
+     */
+    @GetMapping("/costo-envio/{empresaId}")
+    public ResponseEntity<Map<String, Object>> obtenerCostoEnvioPorEmpresa(@PathVariable Long empresaId) {
+        var emprendedorOpt = emprendedorRepository.findByEmpresaId(empresaId);
+
+        java.math.BigDecimal costoEnvio = emprendedorOpt
+                .map(emprendedor -> configuracionPagosService.obtenerCostoEnvio(emprendedor.getId()))
+                .orElse(com.example.demo.domain.service.ConfiguracionPagosService.COSTO_ENVIO_POR_DEFECTO);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("empresaId", empresaId);
+        response.put("costoEnvio", costoEnvio);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Extraer el emprendedor_id del usuario autenticado
      * El JWT tiene como subject el username del usuario.
      * Se busca el usuario por username, luego el emprendedor por usuario_id.

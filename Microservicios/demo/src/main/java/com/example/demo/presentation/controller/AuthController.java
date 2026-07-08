@@ -74,6 +74,40 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/auth/google")
+    @Operation(summary = "Iniciar sesión o registrarse con Google",
+            description = "Recibe el ID token de Google Identity Services; si el email no existe, crea la cuenta automáticamente")
+    public ResponseEntity<?> loginConGoogle(@Valid @RequestBody GoogleLoginRequestDto googleRequest) {
+        try {
+            TokenResponseDto tokenResponse = authService.loginConGoogle(googleRequest.getIdToken());
+            return ResponseEntity.ok(tokenResponse);
+        } catch (IllegalStateException e) {
+            // Google no configurado en el servidor
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(java.util.Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : "Token de Google inválido"));
+        }
+    }
+
+    @PostMapping("/auth/recuperar-password")
+    @Operation(summary = "Recuperar contraseña",
+            description = "Restablece la contraseña validando que el username y el email registrados coincidan")
+    public ResponseEntity<?> recuperarPassword(@Valid @RequestBody RecuperarPasswordDto recuperarDto) {
+        boolean actualizado = usuarioService.restablecerPassword(
+                recuperarDto.getUsername(),
+                recuperarDto.getEmail(),
+                recuperarDto.getNuevaPassword());
+
+        if (actualizado) {
+            return ResponseEntity.ok(java.util.Map.of("message", "Contraseña actualizada exitosamente"));
+        }
+
+        return ResponseEntity.badRequest()
+                .body(java.util.Map.of("message", "Los datos no coinciden con ninguna cuenta registrada"));
+    }
+
     // =====================================
     // GESTIÓN DE USUARIOS (Solo Admin)
     // =====================================

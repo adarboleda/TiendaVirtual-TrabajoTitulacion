@@ -7,6 +7,7 @@ import { Button } from 'primereact/button';
 import { Message } from 'primereact/message';
 import { Divider } from 'primereact/divider';
 import clientesService, { ClienteRequest } from '../../../../services/clientesService';
+import authService from '../../../../services/authService';
 
 interface CheckoutClienteFormProps {
     onClienteData: (data: ClienteRequest) => void;
@@ -25,15 +26,37 @@ const CheckoutClienteForm: React.FC<CheckoutClienteFormProps> = ({ onClienteData
 
     const [errors, setErrors] = useState<Partial<ClienteRequest>>({});
     const [touched, setTouched] = useState<Partial<Record<keyof ClienteRequest, boolean>>>({});
+    // true cuando el email proviene del usuario autenticado (campo bloqueado)
+    const [emailDeSesion, setEmailDeSesion] = useState(false);
 
     const primaryColor = 'var(--primary-color)';
 
     useEffect(() => {
         // Cargar datos guardados si existen
         const savedData = clientesService.obtenerDatosClienteLocal();
-        if (savedData) {
-            setFormData(savedData);
+        const base: ClienteRequest = savedData || {
+            nombre: '',
+            apellido: '',
+            email: '',
+            telefono: '',
+            direccion: '',
+            documento: ''
+        };
+
+        // Automatizar la información de contacto con los datos del usuario autenticado
+        const usuario = authService.getUserInfo();
+        if (usuario?.email) {
+            base.email = usuario.email;
+            setEmailDeSesion(true);
         }
+        if (usuario?.nombre && !base.nombre) {
+            base.nombre = usuario.nombre;
+        }
+        if (usuario?.apellido && !base.apellido) {
+            base.apellido = usuario.apellido;
+        }
+
+        setFormData(base);
     }, []);
 
     useEffect(() => {
@@ -287,7 +310,14 @@ const CheckoutClienteForm: React.FC<CheckoutClienteFormProps> = ({ onClienteData
                                 onBlur={() => handleBlur('email')}
                                 placeholder="ejemplo@correo.com"
                                 className={`w-full ${getFieldError('email') ? 'p-invalid' : ''}`}
+                                disabled={emailDeSesion}
                             />
+                            {emailDeSesion && (
+                                <small className="text-600 flex align-items-center mt-1">
+                                    <i className="pi pi-lock mr-1"></i>
+                                    Correo tomado automáticamente de tu cuenta
+                                </small>
+                            )}
                             {getFieldError('email') && (
                                 <small className="p-error flex align-items-center mt-1">
                                     <i className="pi pi-exclamation-triangle mr-1"></i>

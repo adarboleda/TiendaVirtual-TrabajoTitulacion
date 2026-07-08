@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,9 +24,12 @@ import java.util.UUID;
 public class ConfiguracionPagosService {
 
     private final ConfiguracionMetodosPagoRepository configuracionRepository;
-    
+
     // Directorio donde se guardarán las imágenes de QR
     private final String uploadDir = "uploads/qr-deuna/";
+
+    // Cuota fija de envío por defecto ($5.00)
+    public static final BigDecimal COSTO_ENVIO_POR_DEFECTO = new BigDecimal("5.00");
 
     /**
      * Obtener configuración de pagos del emprendedor
@@ -70,6 +74,33 @@ public class ConfiguracionPagosService {
         
         config = configuracionRepository.save(config);
         return convertirADto(config);
+    }
+
+    /**
+     * Guardar la cuota de envío del emprendedor (solo rol EMP puede invocarlo)
+     */
+    @Transactional
+    public ConfiguracionPagosDto guardarCostoEnvio(Long emprendedorId, BigDecimal costoEnvio) {
+        ConfiguracionMetodosPago config = configuracionRepository.findByEmprendedorId(emprendedorId)
+                .orElse(new ConfiguracionMetodosPago());
+
+        config.setEmprendedorId(emprendedorId);
+        config.setCostoEnvio(costoEnvio);
+
+        config = configuracionRepository.save(config);
+        return convertirADto(config);
+    }
+
+    /**
+     * Obtener la cuota de envío vigente de un emprendedor (para clientes en el checkout).
+     * Si el emprendedor no la configuró, se devuelve la cuota fija de $5.00.
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal obtenerCostoEnvio(Long emprendedorId) {
+        return configuracionRepository.findByEmprendedorId(emprendedorId)
+                .map(ConfiguracionMetodosPago::getCostoEnvio)
+                .filter(valor -> valor != null && valor.compareTo(BigDecimal.ZERO) >= 0)
+                .orElse(COSTO_ENVIO_POR_DEFECTO);
     }
 
     /**
@@ -156,6 +187,7 @@ public class ConfiguracionPagosService {
         dto.setId(config.getId());
         dto.setEmprendedorId(config.getEmprendedorId());
         dto.setQrDeunaUrl(config.getQrDeunaUrl());
+        dto.setCostoEnvio(config.getCostoEnvio() != null ? config.getCostoEnvio() : COSTO_ENVIO_POR_DEFECTO);
         
         if (config.getBanco() != null) {
             DatosBancariosDto datosBancarios = new DatosBancariosDto();

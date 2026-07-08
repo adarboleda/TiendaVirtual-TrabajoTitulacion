@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -31,4 +32,6 @@ public class VentaRequestDto {
     private String comprobanteUrl; // Opcional, requerido solo para TRANSFERENCIA
 
     private Long emprendedorId; // ID del emprendedor/empresa que realiza la venta
+
+    private BigDecimal costoEnvio; // Cuota de envío; si es null se aplica la cuota fija de $5.00
 }

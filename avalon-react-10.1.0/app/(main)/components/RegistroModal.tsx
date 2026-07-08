@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
@@ -16,6 +17,7 @@ interface RegistroModalProps {
 }
 
 export default function RegistroModal({ visible, onHide, onSuccess }: RegistroModalProps) {
+    const router = useRouter();
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -92,15 +94,24 @@ export default function RegistroModal({ visible, onHide, onSuccess }: RegistroMo
                 response?.status === 201;
 
             if (isSuccess) {
-                setSuccess('¡Cuenta creada exitosamente! 🎉 Ya puedes iniciar sesión con tus credenciales.');
-                
-                // ✅ CORREGIDO: Dar más tiempo para leer el mensaje
+                setSuccess('¡Cuenta creada exitosamente! 🎉 Iniciando sesión…');
+
+                // Iniciar sesión automáticamente con las credenciales recién creadas
+                const loginResult = await authService.login(registroData.username, formData.password);
+
                 setTimeout(() => {
                     resetForm();
                     onSuccess();
                     onHide();
-                }, 4500); // 4.5 segundos para leer bien el mensaje
-                
+                    if (loginResult.success) {
+                        // Redirigir al panel principal según el rol del usuario
+                        router.push(authService.getRedirectPath());
+                    } else {
+                        // Si el auto-login falla, llevar al usuario al login
+                        router.push('/auth/login2');
+                    }
+                }, 1500);
+
             } else {
                 // Manejar errores específicos
                 let errorMsg = 'Error al crear la cuenta. Intenta nuevamente.';

@@ -78,9 +78,13 @@ export interface ApiResponse<T> {
 class CartService {
     private readonly CART_KEY = 'ecommerce_cart';
     private readonly TAX_RATE = 0.15;
-    private readonly FREE_SHIPPING_THRESHOLD = 50; // Envío gratis sobre $50
-    private readonly SHIPPING_COST = 0;
+    // Cuota fija de envío ($5.00). Solo el Emprendedor puede modificarla
+    // desde su panel de configuración; el valor vigente se cachea localmente.
+    private readonly DEFAULT_SHIPPING_COST = 5.0;
+    private readonly COSTO_ENVIO_KEY = 'costo_envio_config';
+    private readonly COSTO_ENVIO_TTL_MS = 60 * 1000; // refrescar como máximo cada 60s
     private readonly API_BASE_URL = process.env.NEXT_PUBLIC_VENTAS_API_URL || 'http://localhost:8083';
+    private readonly AUTH_API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8084';
 
     // ===================== MÉTODOS DEL CARRITO =====================
 
@@ -263,9 +267,13 @@ class CartService {
         const items = this.getCart();
         const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
         const impuestos = subtotal * this.TAX_RATE;
-        const envio = subtotal >= this.FREE_SHIPPING_THRESHOLD ? 0 : this.SHIPPING_COST;
+        // Cuota fija de envío (configurable solo por el Emprendedor)
+        const envio = items.length > 0 ? this.getCostoEnvio() : 0;
         const total = subtotal + impuestos + envio;
         const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
+
+        // Refrescar en segundo plano el costo configurado por el emprendedor
+        this.syncCostoEnvio();
 
         return {
             items,
@@ -275,6 +283,79 @@ class CartService {
             envio,
             total
         };
+    }
+
+    // ===================== COSTO DE ENVÍO =====================
+
+    /**
+     * Devuelve la cuota de envío vigente (valor cacheado del emprendedor
+     * de la empresa del carrito, o la cuota fija de $5.00 por defecto).
+     */
+    getCostoEnvio(): number {
+        if (typeof window === 'undefined') return this.DEFAULT_SHIPPING_COST;
+
+        try {
+            const raw = localStorage.getItem(this.COSTO_ENVIO_KEY);
+            if (raw) {
+                const cached = JSON.parse(raw);
+                const empresaId = this.getCart()[0]?.producto.empresa?.id;
+                if (cached && cached.empresaId === empresaId && typeof cached.valor === 'number' && cached.valor >= 0) {
+                    return cached.valor;
+                }
+            }
+        } catch (e) {
+            // cache corrupta: usar valor por defecto
+        }
+        return this.DEFAULT_SHIPPING_COST;
+    }
+
+    /**
+     * Consulta (con throttle) el costo de envío configurado por el emprendedor
+     * de la empresa del carrito y lo cachea en localStorage.
+     */
+    // Marca de tiempo del último intento de sincronización (evita spam de red)
+    private lastCostoEnvioSync = 0;
+
+    async syncCostoEnvio(): Promise<void> {
+        if (typeof window === 'undefined') return;
+
+        const empresaId = this.getCart()[0]?.producto.empresa?.id;
+        if (!empresaId) return;
+
+        if (Date.now() - this.lastCostoEnvioSync < this.COSTO_ENVIO_TTL_MS) return;
+        this.lastCostoEnvioSync = Date.now();
+
+        try {
+            const raw = localStorage.getItem(this.COSTO_ENVIO_KEY);
+            if (raw) {
+                const cached = JSON.parse(raw);
+                if (cached && cached.empresaId === empresaId && Date.now() - (cached.ts || 0) < this.COSTO_ENVIO_TTL_MS) {
+                    return; // cache aún vigente
+                }
+            }
+
+            const response = await fetch(`${this.AUTH_API_BASE_URL}/api/emprendedor/configuracion-pagos/costo-envio/${empresaId}`);
+            if (response.ok) {
+                const data = await response.json();
+                const valor = typeof data.costoEnvio === 'number' ? data.costoEnvio : parseFloat(data.costoEnvio);
+                if (!isNaN(valor) && valor >= 0) {
+                    const anterior = this.getCostoEnvio();
+                    localStorage.setItem(this.COSTO_ENVIO_KEY, JSON.stringify({ empresaId, valor, ts: Date.now() }));
+                    if (anterior !== valor) {
+                        // Notificar fuera del ciclo de render de React
+                        setTimeout(() => this.emitCartUpdate(), 0);
+                    }
+                    return;
+                }
+            }
+            // Sin configuración del emprendedor: cachear el valor por defecto
+            localStorage.setItem(
+                this.COSTO_ENVIO_KEY,
+                JSON.stringify({ empresaId, valor: this.DEFAULT_SHIPPING_COST, ts: Date.now() })
+            );
+        } catch (e) {
+            // Sin conexión con el servicio: se mantiene la cuota por defecto
+        }
     }
 
     // ===================== CHECKOUT =====================
@@ -361,7 +442,8 @@ class CartService {
                     precioUnitario: item.producto.precio
                 })),
                 metodoPago: metodoPago,
-                comprobanteUrl: comprobanteUrl
+                comprobanteUrl: comprobanteUrl,
+                costoEnvio: this.getCostoEnvio()
             };
 
             console.log('📦 Datos de checkout:', checkoutData);

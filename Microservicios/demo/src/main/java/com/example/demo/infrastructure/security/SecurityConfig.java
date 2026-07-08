@@ -41,11 +41,13 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/registro", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/google", "/api/auth/recuperar-password").permitAll()
                         .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         // Endpoints públicos para clientes en el checkout
                         .requestMatchers("/api/emprendedor/configuracion-pagos/payphone/*").permitAll()
                         .requestMatchers("/api/emprendedor/configuracion-pagos/bancarios/*").permitAll()
                         .requestMatchers("/api/emprendedor/configuracion-pagos/deuna-qr/*").permitAll()
+                        .requestMatchers("/api/emprendedor/configuracion-pagos/costo-envio/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

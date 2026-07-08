@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -43,6 +44,10 @@ public class ConfiguracionMetodosPago {
     // URL del QR de Deuna
     @Column(name = "qr_deuna_url", columnDefinition = "TEXT")
     private String qrDeunaUrl;
+
+    // Cuota de envío configurada por el emprendedor (por defecto $5.00)
+    @Column(name = "costo_envio", precision = 10, scale = 2)
+    private BigDecimal costoEnvio;
 
     // Datos de Payphone
     @Column(name = "payphone_app_id", length = 255)

@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS configuracion_metodos_pago (
     cedula_ruc VARCHAR(20),
     email VARCHAR(255),
     qr_deuna_url TEXT,
+    costo_envio DECIMAL(10,2) DEFAULT 5.00,
     payphone_app_id VARCHAR(255),
     payphone_token TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

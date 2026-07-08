@@ -170,8 +170,17 @@ public class FacturaServiceImpl implements FacturaService {
             totalesTable.setWidth(UnitValue.createPercentValue(100));
             totalesTable.setMarginTop(20);
 
-            BigDecimal subtotal = venta.getTotal().divide(BigDecimal.valueOf(1.15), 2, BigDecimal.ROUND_HALF_UP);
-            BigDecimal iva = venta.getTotal().subtract(subtotal);
+            // Usar los valores almacenados en la venta; el envío es la diferencia
+            BigDecimal subtotal = venta.getSubtotal() != null
+                    ? venta.getSubtotal()
+                    : venta.getTotal().divide(BigDecimal.valueOf(1.15), 2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal iva = venta.getImpuesto() != null
+                    ? venta.getImpuesto()
+                    : venta.getTotal().subtract(subtotal);
+            BigDecimal envio = venta.getTotal().subtract(subtotal).subtract(iva);
+            if (envio.compareTo(BigDecimal.ZERO) < 0) {
+                envio = BigDecimal.ZERO;
+            }
 
             totalesTable.addCell(new Cell().setBorder(null)
                     .add(new Paragraph("Subtotal:").setBold().setTextAlignment(TextAlignment.RIGHT)));
@@ -182,6 +191,11 @@ public class FacturaServiceImpl implements FacturaService {
                     .add(new Paragraph("IVA (15%):").setBold().setTextAlignment(TextAlignment.RIGHT)));
             totalesTable.addCell(new Cell().setBorder(null)
                     .add(new Paragraph("$" + iva.toString()).setTextAlignment(TextAlignment.RIGHT)));
+
+            totalesTable.addCell(new Cell().setBorder(null)
+                    .add(new Paragraph("Envío:").setBold().setTextAlignment(TextAlignment.RIGHT)));
+            totalesTable.addCell(new Cell().setBorder(null)
+                    .add(new Paragraph("$" + envio.setScale(2, BigDecimal.ROUND_HALF_UP).toString()).setTextAlignment(TextAlignment.RIGHT)));
 
             totalesTable.addCell(new Cell().setBorder(null)
                     .add(new Paragraph("TOTAL:").setBold().setFontSize(14)

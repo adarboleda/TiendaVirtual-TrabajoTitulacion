@@ -135,6 +135,92 @@ class AuthService {
         return 'ROLE_USER'; // Por defecto
     }
 
+    /**
+     * Inicia sesión (o registra automáticamente) con una credencial de Google.
+     * @param idToken Credencial JWT emitida por Google Identity Services
+     */
+    async loginWithGoogle(idToken: string): Promise<LoginResponse> {
+        try {
+            const response = await fetch(`${this.API_URL}/google`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ idToken })
+            });
+
+            if (response.ok) {
+                const data: TokenResponseDto = await response.json();
+
+                this.setToken(data.accessToken);
+
+                if (data.usuario) {
+                    const userInfo: UsuarioInfo = {
+                        id: data.usuario.id,
+                        username: data.usuario.username,
+                        email: data.usuario.email,
+                        nombre: data.usuario.nombre,
+                        apellido: data.usuario.apellido,
+                        rol: this.extractPrimaryRole(data.usuario.roles || []),
+                        empresaId: data.usuario.empresaId
+                    };
+                    this.setUserInfo(userInfo);
+                }
+
+                return { success: true, data };
+            }
+
+            let errorMessage = 'No se pudo iniciar sesión con Google';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+                // respuesta sin cuerpo JSON
+            }
+            return { success: false, message: errorMessage };
+        } catch (error) {
+            console.error('🚨 Error de conexión con Google login:', error);
+            return {
+                success: false,
+                message: 'Error de conexión. No se pudo establecer contacto con el servicio de autenticación.'
+            };
+        }
+    }
+
+    /**
+     * Restablece la contraseña validando que username y email coincidan.
+     */
+    async recuperarPassword(username: string, email: string, nuevaPassword: string): Promise<{ success: boolean; message: string }> {
+        try {
+            const response = await fetch(`${this.API_URL}/recuperar-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, email, nuevaPassword })
+            });
+
+            if (response.ok) {
+                return { success: true, message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión.' };
+            }
+
+            let message = 'No se pudo restablecer la contraseña. Verifica tus datos.';
+            try {
+                const errorData = await response.json();
+                message = errorData.message || message;
+            } catch (e) {
+                // respuesta sin cuerpo JSON
+            }
+            return { success: false, message };
+        } catch (error) {
+            console.error('🚨 Error de conexión en recuperación:', error);
+            return {
+                success: false,
+                message: 'Error de conexión con el servicio de autenticación.'
+            };
+        }
+    }
+
     async register(userData: any): Promise<any> {
         try {
             const response = await fetch(`${this.API_URL}/registro`, {

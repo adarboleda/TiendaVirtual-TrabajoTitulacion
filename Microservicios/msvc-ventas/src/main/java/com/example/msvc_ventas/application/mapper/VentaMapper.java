@@ -55,7 +55,13 @@ public class VentaMapper {
 
         // Aplicar impuesto (15%)
         BigDecimal impuesto = subtotal.multiply(new BigDecimal("0.15"));
-        BigDecimal total = subtotal.add(impuesto);
+
+        // Cuota de envío: usar la enviada por el cliente o la cuota fija de $5.00
+        BigDecimal costoEnvio = dto.getCostoEnvio() != null && dto.getCostoEnvio().compareTo(BigDecimal.ZERO) >= 0
+                ? dto.getCostoEnvio()
+                : new BigDecimal("5.00");
+
+        BigDecimal total = subtotal.add(impuesto).add(costoEnvio);
 
         // Generar número de factura único (formato simple para ejemplo)
         String numeroFactura = "FACT-" + System.currentTimeMillis();

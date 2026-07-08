@@ -21,7 +21,7 @@ const AboutSection: React.FC = () => {
         {
             icon: 'pi pi-truck',
             title: 'Envío Rápido',
-            description: 'Entrega express en 24-48 horas. Envío gratis en compras superiores a $50.'
+            description: 'Entrega express en 24-48 horas con una cuota fija de envío de $5.00.'
         },
         {
             icon: 'pi pi-refresh',

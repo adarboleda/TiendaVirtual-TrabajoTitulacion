@@ -49,13 +49,14 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             description: 'Realiza una transferencia y envíanos el comprobante',
             color: '#22c55e'
         },
-        {
-            value: 'tarjeta' as PaymentMethod,
-            label: 'Tarjeta de Crédito/Débito',
-            icon: 'pi-credit-card',
-            description: 'Paga de forma segura con tu tarjeta',
-            color: '#3b82f6'
-        },
+        // Stripe/tarjeta oculto temporalmente (se conserva el código para reactivarlo a futuro)
+        // {
+        //     value: 'tarjeta' as PaymentMethod,
+        //     label: 'Tarjeta de Crédito/Débito',
+        //     icon: 'pi-credit-card',
+        //     description: 'Paga de forma segura con tu tarjeta',
+        //     color: '#3b82f6'
+        // },
         {
             value: 'deuna' as PaymentMethod,
             label: 'Deuna',

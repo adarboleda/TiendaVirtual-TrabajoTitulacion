@@ -59,6 +59,31 @@ public class UsuarioServiceImpl implements UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
+    @Override
+    public Optional<Usuario> buscarPorEmail(String email) {
+        return usuarioRepository.findByEmail(email);
+    }
+
+    @Override
+    public boolean restablecerPassword(String username, String email, String nuevaPassword) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
+
+        if (usuarioOpt.isEmpty()) {
+            return false;
+        }
+
+        Usuario usuario = usuarioOpt.get();
+
+        // El email registrado debe coincidir con el proporcionado
+        if (usuario.getEmail() == null || !usuario.getEmail().equalsIgnoreCase(email)) {
+            return false;
+        }
+
+        usuario.setPassword(passwordEncoder.encode(nuevaPassword));
+        usuarioRepository.save(usuario);
+        return true;
+    }
+
     // =====================================
     // MÉTODOS NUEVOS PARA GESTIÓN ADMIN
     // =====================================
