@@ -357,6 +357,7 @@ const HeroSection: React.FC = () => {
                                     border: `1px solid ${primaryColor}25`,
                                     boxShadow: `0 12px 30px ${primaryColor}15`
                                 }}
+                                onClick={handleExploreProducts}
                             >
                                 <div 
                                     className="p-3 border-round-xl mx-auto mb-3"
@@ -379,6 +380,7 @@ const HeroSection: React.FC = () => {
                                     border: `1px solid ${primaryColor}25`,
                                     boxShadow: `0 12px 30px ${primaryColor}15`
                                 }}
+                                onClick={() => window.open('https://turismo.gadmsigchos.gob.ec:448/', '_blank')}
                             >
                                 <div 
                                     className="p-3 border-round-xl mx-auto mb-3"
@@ -401,6 +403,7 @@ const HeroSection: React.FC = () => {
                                     border: `1px solid ${primaryColor}25`,
                                     boxShadow: `0 12px 30px ${primaryColor}15`
                                 }}
+                                onClick={() => window.open('https://aulavirtual.g-a-security.com/moodle/', '_blank')}
                             >
                                 <div 
                                     className="p-3 border-round-xl mx-auto mb-3"
